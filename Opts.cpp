@@ -25,7 +25,25 @@ using namespace llvm;
 
 bool runOnBasicBlock(BasicBlock &B) {
     
-    
+    for(Instruction &Inst : B){
+      if(Inst.getOpcode() == Instruction::Add){
+
+        auto *Op1 = Inst.getOperand(0);
+        auto *Op2 = Inst.getOperand(1);
+
+
+        // Se uno dei due operandi è zero, l'istruzione è inutile
+        if (ConstantInt *Op = dyn_cast<ConstantInt>(Op1)) {
+          if (Op->isZero() && isa<Instruction>(Op2)) {
+            Inst.replaceAllUsesWith(Op2);
+          }
+        } else if (auto *Op = dyn_cast<ConstantInt>(Op2)) {
+          if (Op->isZero() && isa<Instruction>(Op1)) {
+            Inst.replaceAllUsesWith(Op1);
+          }
+        }
+      }
+    }
 
     return true;
   }
@@ -61,10 +79,10 @@ struct TestPass: PassInfoMixin<TestPass> {
   	errs() << F.getName();
 
     if(runOnFunction(F)){
-      err() << "Transformed\n";
+      errs() << "Transformed\n";
     } else
     {
-      err() << "Not Transformed\n";
+      errs() << "Not Transformed\n";
     }
 
   	return PreservedAnalyses::all();
