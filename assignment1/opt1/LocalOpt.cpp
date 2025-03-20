@@ -1,6 +1,6 @@
 //=============================================================================
 // FILE:
-//    TestPass.cpp
+//    LocalOpt.cpp
 //
 // DESCRIPTION:
 //    Visits all functions in a module and prints their names. Strictly speaking, 
@@ -10,7 +10,7 @@
 //
 // USAGE:
 //    New PM
-//      opt -load-pass-plugin=<path-to>libTestPass.so -passes="test-pass" `\`
+//      opt -load-pass-plugin=<path-to>libLocalOpt.so -passes="test-pass" `\`
 //        -disable-output <input-llvm-file>
 //
 //
@@ -60,10 +60,6 @@ bool runOnBasicBlock(BasicBlock &B) {
     }
     return true;
   }
-    
-
-    
-
 
 bool runOnFunction(Function &F) {
   bool Transformed = false;
@@ -79,27 +75,24 @@ bool runOnFunction(Function &F) {
 
 
 //-----------------------------------------------------------------------------
-// TestPass implementation
+// LocalOpt implementation
 //-----------------------------------------------------------------------------
-// No need to expose the internals of the pass to the outside world - keep
-// everything in an anonymous namespace.
+// No need to expose the internals of the pass to the outside world - keep everything in an anonymous namespace.
 namespace {
 
 
 // New PM implementation
-struct TestPass: PassInfoMixin<TestPass> {
-  // Main entry point, takes IR unit to run the pass on (&F) and the
-  // corresponding pass manager (to be queried if need be)
+struct LocalOpt: PassInfoMixin<LocalOpt> {
+  // Main entry point, takes IR unit to run the pass on (&F) and the corresponding pass manager (to be queried if need be)
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
 
   	errs() << F.getName();
 
-    if(runOnFunction(F)){
+    if(runOnFunction(F))
       errs() << "Transformed\n";
-    } else
-    {
+    else
       errs() << "Not Transformed\n";
-    }
+    
 
   	return PreservedAnalyses::all();
 }
@@ -116,13 +109,13 @@ struct TestPass: PassInfoMixin<TestPass> {
 // New PM Registration
 //-----------------------------------------------------------------------------
 llvm::PassPluginLibraryInfo getTestPassPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "Opts", LLVM_VERSION_STRING,
+  return {LLVM_PLUGIN_API_VERSION, "LocalOpt", LLVM_VERSION_STRING,
           [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](StringRef Name, FunctionPassManager &FPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "opts") {
-                    FPM.addPass(TestPass());
+                  if (Name == "local-opt") {
+                    FPM.addPass(LocalOpt());
                     return true;
                   }
                   return false;
@@ -130,10 +123,7 @@ llvm::PassPluginLibraryInfo getTestPassPluginInfo() {
           }};
 }
 
-// This is the core interface for pass plugins. It guarantees that 'opt' will
-// be able to recognize TestPass when added to the pass pipeline on the
-// command line, i.e. via '-passes=test-pass'
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
+// This is the core interface for pass plugins. It guarantees that 'opt' will be able to recognize LocalOpt when added to the pass pipeline on the command line, i.e. via '-p local-opt'
+extern "C" LLVM_ATTRIBUTE_WEAK::llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() {
   return getTestPassPluginInfo();
 }
