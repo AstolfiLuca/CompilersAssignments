@@ -2,7 +2,7 @@
 This repository contains the code and the documentation related to the compilers part II assignments
 
 Members in alphabetical order:
-- Alioto Piero Cristian
+- Alioto Cristian Piero
 - Aresta Simone
 - Astolfi Luca
 
