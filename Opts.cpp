@@ -24,13 +24,10 @@
 using namespace llvm;
 
 bool runOnBasicBlock(BasicBlock &B) {
-    
     for(Instruction &Inst : B){
       if(Inst.getOpcode() == Instruction::Add){
-
         auto *Op1 = Inst.getOperand(0);
         auto *Op2 = Inst.getOperand(1);
-
 
         // Se uno dei due operandi è zero, l'istruzione è inutile
         if (ConstantInt *Op = dyn_cast<ConstantInt>(Op1)) {
@@ -43,10 +40,29 @@ bool runOnBasicBlock(BasicBlock &B) {
           }
         }
       }
-    }
 
+      // Multiplication
+      else if(Inst.getOpcode() == Instruction::Mul){
+        auto *Op1 = Inst.getOperand(0);
+        auto *Op2 = Inst.getOperand(1);
+
+        // If one of the operators is 1 the instruction is useless
+        if (ConstantInt *Op = dyn_cast<ConstantInt>(Op1)) {
+          if (Op->isOne() && isa<Instruction>(Op2)) {
+            Inst.replaceAllUsesWith(Op2);
+          }
+        } else if (auto *Op = dyn_cast<ConstantInt>(Op2)) {
+          if (Op->isOne() && isa<Instruction>(Op1)) {
+            Inst.replaceAllUsesWith(Op1);
+          }
+        }
+      }
+    }
     return true;
   }
+    
+
+    
 
 
 bool runOnFunction(Function &F) {

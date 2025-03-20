@@ -1,5 +1,5 @@
 CMakeFiles/Opts.dir/Opts.cpp.o: \
- /home/simo/Documents/compilatori/pt2/CompilersAssignments/Opts.cpp \
+ /home/simo/Documents/Compilatori/assignments/CompilersAssignments/Opts.cpp \
  /usr/include/stdc-predef.h \
  /usr/include/llvm-19/llvm/IR/LegacyPassManager.h \
  /usr/include/llvm-19/llvm/Support/CBindingWrapping.h \

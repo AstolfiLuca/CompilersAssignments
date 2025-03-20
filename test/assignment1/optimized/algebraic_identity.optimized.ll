@@ -1,4 +1,4 @@
-; ModuleID = 'algebraic_identity.optimized.bc'
+; ModuleID = 'optimized/algebraic_identity.optimized.bc'
 source_filename = "algebraic_identity.cpp"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
@@ -25,13 +25,13 @@ define dso_local noundef i32 @_Z23algebraic_identity_testv() #0 {
   store i32 %13, ptr %3, align 4
   %14 = load i32, ptr %1, align 4
   %15 = mul nsw i32 %14, 1
-  store i32 %15, ptr %1, align 4
+  store i32 %14, ptr %1, align 4
   %16 = load i32, ptr %1, align 4
   %17 = add nsw i32 %16, 3
   store i32 %17, ptr %4, align 4
   %18 = load i32, ptr %1, align 4
   %19 = mul nsw i32 1, %18
-  store i32 %19, ptr %1, align 4
+  store i32 %18, ptr %1, align 4
   %20 = load i32, ptr %1, align 4
   %21 = add nsw i32 %20, 4
   store i32 %21, ptr %5, align 4

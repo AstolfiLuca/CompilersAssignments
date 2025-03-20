@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/simo/Documents/compilatori/pt2/CompilersAssignments
+CMAKE_SOURCE_DIR = /home/simo/Documents/Compilatori/assignments/CompilersAssignments
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/simo/Documents/compilatori/pt2/CompilersAssignments/build
+CMAKE_BINARY_DIR = /home/simo/Documents/Compilatori/assignments/CompilersAssignments/build
 
 # Utility rule file for RISCVTargetParserTableGen.
 
@@ -78,6 +78,6 @@ CMakeFiles/RISCVTargetParserTableGen.dir/clean:
 .PHONY : CMakeFiles/RISCVTargetParserTableGen.dir/clean
 
 CMakeFiles/RISCVTargetParserTableGen.dir/depend:
-	cd /home/simo/Documents/compilatori/pt2/CompilersAssignments/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/simo/Documents/compilatori/pt2/CompilersAssignments /home/simo/Documents/compilatori/pt2/CompilersAssignments /home/simo/Documents/compilatori/pt2/CompilersAssignments/build /home/simo/Documents/compilatori/pt2/CompilersAssignments/build /home/simo/Documents/compilatori/pt2/CompilersAssignments/build/CMakeFiles/RISCVTargetParserTableGen.dir/DependInfo.cmake "--color=$(COLOR)"
+	cd /home/simo/Documents/Compilatori/assignments/CompilersAssignments/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/simo/Documents/Compilatori/assignments/CompilersAssignments /home/simo/Documents/Compilatori/assignments/CompilersAssignments /home/simo/Documents/Compilatori/assignments/CompilersAssignments/build /home/simo/Documents/Compilatori/assignments/CompilersAssignments/build /home/simo/Documents/Compilatori/assignments/CompilersAssignments/build/CMakeFiles/RISCVTargetParserTableGen.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/RISCVTargetParserTableGen.dir/depend
 
