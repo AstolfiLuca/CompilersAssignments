@@ -50,7 +50,7 @@ bool runOnBasicBlock(BasicBlock &BB) {
       }
 
       int x = cast<ConstantInt>(Op)->getSExtValue();
-      bool powerOfTwoMinus1 = !(x-1 == 0) && !(x-1 & (x-1 - 1)); // 
+      bool powerOfTwoMinus1 = !(x-1 == 0) && !(x-1 & (x-1 - 1)); 
       bool powerOfTwo       = !(x   == 0) && !(x   & (x   - 1));
       bool powerOfTwoPlus1  = !(x+1 == 0) && !(x+1 & (x+1 - 1)); 
 
