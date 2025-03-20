@@ -1,16 +1,10 @@
-int strength_reduction_test(){
-    int a = 1;
-    int b = 60; // 60 / (3 * 4 * 5) = 1
-    int c = 1;
-    int d = 1320; // 1320 / (10 * 11 * 12) = 1 
-
-
+int strength_reduction_test(int a, int b, int c, int d){
     // Moltiplicazione
-    a = a * 3;
-    a = a * 4;
-    a = a * 5;
+    a = a * 15;
 
+    d = d / 16;
 
+    /*
     // Divisione
     b = b / 3;
     b = b / 4; // Probabilmente l'unica che funziona
@@ -29,6 +23,7 @@ int strength_reduction_test(){
     d = d / 10;
     d = d / 11;
     d = d / 12;
+    */
 
 
     return a;

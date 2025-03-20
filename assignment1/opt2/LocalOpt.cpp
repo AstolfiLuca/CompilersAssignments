@@ -16,6 +16,9 @@
 //
 // License: MIT
 //=============================================================================
+
+#include <cmath>
+
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
@@ -25,39 +28,78 @@ using namespace llvm;
 
 bool runOnBasicBlock(BasicBlock &BB) {
   for(Instruction &Inst : BB){
-    if(Inst.getOpcode() == Instruction::Add){
+    if(Inst.getOpcode() == Instruction::Mul || Inst.getOpcode() == Instruction::SDiv){
+      
+      
+      bool division = false;
+      if (Inst.getOpcode() == Instruction::SDiv)
+        division = true;
+      
       auto *Op1 = Inst.getOperand(0);
       auto *Op2 = Inst.getOperand(1);
 
-      // Se uno dei due operandi è zero, l'istruzione è inutile
-      if (ConstantInt *Op = dyn_cast<ConstantInt>(Op1)) {
-        if (Op->isZero() && isa<Instruction>(Op2)) {
-          Inst.replaceAllUsesWith(Op2);
-        }
-      } else if (CostantInt *Op = dyn_cast<ConstantInt>(Op2)) {
-        if (Op->isZero() && isa<Instruction>(Op1)) {
-          Inst.replaceAllUsesWith(Op1);
-        }
+      auto *Op = ConstantInt::get(Inst.getType(), 0); 
+      Instruction *I;
+      
+      if (auto *Op1Const = dyn_cast<ConstantInt>(Op1)) {
+        Op = Op1Const;
+        I = dyn_cast<Instruction>(Op2);
+      } else if (auto *Op2Const = dyn_cast<ConstantInt>(Op2)) {
+        Op = Op2Const;
+        I = dyn_cast<Instruction>(Op1);
       }
-    }
 
-    // Multiplication
-    else if(Inst.getOpcode() == Instruction::Mul){
-      auto *Op1 = Inst.getOperand(0);
-      auto *Op2 = Inst.getOperand(1);
+      int x = cast<ConstantInt>(Op)->getSExtValue();
+      bool powerOfTwoMinus1 = !(x-1 == 0) && !(x-1 & (x-1 - 1)); // 
+      bool powerOfTwo       = !(x   == 0) && !(x   & (x   - 1));
+      bool powerOfTwoPlus1  = !(x+1 == 0) && !(x+1 & (x+1 - 1)); 
 
-      // If one of the operators is 1 the instruction is useless
-      if (ConstantInt *Op = dyn_cast<ConstantInt>(Op1)) {
-        if (Op->isOne() && isa<Instruction>(Op2)) {
-          Inst.replaceAllUsesWith(Op2);
+      Instruction *NewInst;
+
+      if(powerOfTwo || powerOfTwoMinus1 || powerOfTwoPlus1){
+        int pot = static_cast<int>(log2(x));
+        if(powerOfTwoPlus1) pot++;
+
+        BinaryOperator *Shift;
+
+        if(division){
+          Shift = BinaryOperator::Create(
+            Instruction::LShr, I, ConstantInt::get(I->getType(), pot)
+          );
+        }else{
+          Shift = BinaryOperator::Create(
+            Instruction::Shl, I, ConstantInt::get(I->getType(), pot)
+          );
         }
-      } else if (auto *Op = dyn_cast<ConstantInt>(Op2)) {
-        if (Op->isOne() && isa<Instruction>(Op1)) {
-          Inst.replaceAllUsesWith(Op1);
+
+        
+
+        Shift->insertAfter(&Inst);
+        NewInst = Shift;
+        
+        if(powerOfTwoMinus1 && !division){
+          auto *AddInst = BinaryOperator::Create(
+            Instruction::Add, Shift, I
+          );
+
+          AddInst->insertAfter(Shift);
+          NewInst = AddInst;
         }
+
+        if(powerOfTwoPlus1 && !division){
+          auto *SubInst = BinaryOperator::Create(
+            Instruction::Sub, Shift, I
+          );
+
+          SubInst->insertAfter(Shift);
+          NewInst = SubInst;
+        }
+        Inst.replaceAllUsesWith(NewInst);
       }
+      
     }
   }
+  
   return true;
 }
 

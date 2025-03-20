@@ -23,9 +23,8 @@ runtest:
 clean_builds:
 	find . -type d -name "build" -exec rm -rf {} +
 
-
 # Inutilizzata normalmente
 compile_clang:
-	clang -O$(flag) -emit-llvm -S $(test).cpp -o optimized/$(test).ll
+	clang -O$(flag) -emit-llvm -S $(assignment)/$(opt)/test/$(test).cpp -o $(assignment)/$(opt)/test/$(test).ll
 
 .PHONY: help configure_env runtest clean_builds compile_clang

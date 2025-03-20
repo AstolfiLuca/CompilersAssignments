@@ -8,6 +8,7 @@ Members in alphabetical order:
 
 ## Contents of this page
 - [Introduction](#introduction)
+- [Setup](#setup)
 - [Usage](#usage)
 - [Assignments](#assignments)
 - [Links](#links)
@@ -17,10 +18,22 @@ Members in alphabetical order:
 ## Introduction
 The objective of the course is understanding the front-end of the compiler, focusing on the compiler LLVM.
 
+## Setup
+To setup the workspace use:
+```bash
+make configure_env
+```
 
 ## Usage
+To run a test use:
+```bash
+make runtest assignment=assignment<number> opt=opt<number> test=<name_test>
+```
 
-
+To remove all build directories:
+```bash
+make clean_builds
+```
 
 ## Assignments
 - 1° Assignment: 
@@ -30,7 +43,11 @@ The objective of the course is understanding the front-end of the compiler, focu
     - Multi-Instruction Optimization
 
 ## Links
-LLVM front page: 
+LLVM front page:
+
+LLVM Instruction documentation:
+
+https://llvm.org/doxygen/classllvm_1_1Instruction.html
 
 ## Structure
 <!-- FILETREE START -->
