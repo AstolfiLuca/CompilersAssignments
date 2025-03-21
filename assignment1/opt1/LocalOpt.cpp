@@ -25,39 +25,27 @@ using namespace llvm;
 
 bool runOnBasicBlock(BasicBlock &BB) {
   for(Instruction &Inst : BB){
-    if(Inst.getOpcode() == Instruction::Add){
+    if (isa<BinaryOperator>(&Inst)){
       auto *Op1 = Inst.getOperand(0);
       auto *Op2 = Inst.getOperand(1);
+      auto OpCode = Inst.getOpcode();
+      ConstantInt *intOp1 = dyn_cast<ConstantInt>(Op1);
+      ConstantInt *intOp2 = dyn_cast<ConstantInt>(Op2);
 
-      // Se uno dei due operandi è zero, l'istruzione è inutile
-      if (ConstantInt *Op = dyn_cast<ConstantInt>(Op1)) {
-        if (Op->isZero() && isa<Instruction>(Op2)) {
-          Inst.replaceAllUsesWith(Op2);
-        }
-      } else if (CostantInt *Op = dyn_cast<ConstantInt>(Op2)) {
-        if (Op->isZero() && isa<Instruction>(Op1)) {
-          Inst.replaceAllUsesWith(Op1);
-        }
+      // Se uno dei due operandi è 0, l'addizione è inutile
+      if (OpCode == Instruction::Add) {
+        if (intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(Op2);
+        if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(Op1);
       }
-    }
 
-    // Multiplication
-    else if(Inst.getOpcode() == Instruction::Mul){
-      auto *Op1 = Inst.getOperand(0);
-      auto *Op2 = Inst.getOperand(1);
-
-      // If one of the operators is 1 the instruction is useless
-      if (ConstantInt *Op = dyn_cast<ConstantInt>(Op1)) {
-        if (Op->isOne() && isa<Instruction>(Op2)) {
-          Inst.replaceAllUsesWith(Op2);
-        }
-      } else if (auto *Op = dyn_cast<ConstantInt>(Op2)) {
-        if (Op->isOne() && isa<Instruction>(Op1)) {
-          Inst.replaceAllUsesWith(Op1);
-        }
+      // Se uno dei due operandi è 1, la moltiplicazione è inutile
+      if (OpCode == Instruction::Mul) {
+        if (intOp1 && intOp1->isOne()) Inst.replaceAllUsesWith(Op2);
+        if (intOp2 && intOp2->isOne()) Inst.replaceAllUsesWith(Op1);
       }
     }
   }
+
   return true;
 }
 
@@ -86,14 +74,14 @@ struct LocalOpt: PassInfoMixin<LocalOpt> {
   // Main entry point, takes IR unit to run the pass on (&F) and the corresponding pass manager (to be queried if need be)
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
 
-  	errs() << F.getName();
+  	errs() << F.getName() << ": ";
 
     if(runOnFunction(F))
-      errs() << "Transformed\n";
+      errs() << "Transformed";
     else
-      errs() << "Not Transformed\n";
+      errs() << "Not Transformed";
     
-
+    errs() << "\n";
   	return PreservedAnalyses::all();
 }
 
