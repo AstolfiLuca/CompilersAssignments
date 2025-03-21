@@ -29,8 +29,9 @@ using namespace llvm;
 bool runOnBasicBlock(BasicBlock &BB) {
   for(auto it = BB.begin(), end = BB.end(); it != end; ){
     Instruction &Inst = *it++;
+    bool division = (Inst.getOpcode() == Instruction::SDiv);
 
-    if(Inst.getOpcode() == Instruction::Mul || Inst.getOpcode() == Instruction::SDiv){
+    if(Inst.getOpcode() == Instruction::Mul || division){
       auto *Op1 = Inst.getOperand(0);
       auto *Op2 = Inst.getOperand(1);
       auto *Op = ConstantInt::get(Inst.getType(), 0); 
@@ -57,7 +58,6 @@ bool runOnBasicBlock(BasicBlock &BB) {
       bool powerOfTwoMinus1 = (x > 1) && !(x-1 & x-2); // x = 17 
       bool powerOfTwo       = (x > 0) && !(x & x-1);   // x = 16
       bool powerOfTwoPlus1  = (x > 0) && !(x+1 & x);   // x = 15
-      bool division = (Inst.getOpcode() == Instruction::SDiv);
       if(division && !powerOfTwo) continue;
 
       // Se è una divisione è anche un powerOfTwo
