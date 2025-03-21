@@ -27,76 +27,60 @@
 using namespace llvm;
 
 bool runOnBasicBlock(BasicBlock &BB) {
-  for(Instruction &Inst : BB){
+  for(auto it = BB.begin(), end = BB.end(); it != end; ){
+    Instruction &Inst = *it++;
+
     if(Inst.getOpcode() == Instruction::Mul || Inst.getOpcode() == Instruction::SDiv){
-      
-      
-      bool division = false;
-      if (Inst.getOpcode() == Instruction::SDiv)
-        division = true;
-      
       auto *Op1 = Inst.getOperand(0);
       auto *Op2 = Inst.getOperand(1);
-
       auto *Op = ConstantInt::get(Inst.getType(), 0); 
-      Instruction *I;
+      Instruction *I, *NewInst;
       
-      if (auto *Op1Const = dyn_cast<ConstantInt>(Op1)) {
-        Op = Op1Const;
+      // Una delle due è per forza un'istruzione
+        // Un operazione tra due numeri viene convertita 
+        // direttamente in una store del risultato (anche con -O0)
+      if (Op = dyn_cast<ConstantInt>(Op1)) 
         I = dyn_cast<Instruction>(Op2);
-      } else if (auto *Op2Const = dyn_cast<ConstantInt>(Op2)) {
-        Op = Op2Const;
+      else if (Op = dyn_cast<ConstantInt>(Op2))
         I = dyn_cast<Instruction>(Op1);
-      }
 
       int x = cast<ConstantInt>(Op)->getSExtValue();
-      bool powerOfTwoMinus1 = !(x-1 == 0) && !(x-1 & (x-1 - 1)); 
-      bool powerOfTwo       = !(x   == 0) && !(x   & (x   - 1));
-      bool powerOfTwoPlus1  = !(x+1 == 0) && !(x+1 & (x+1 - 1)); 
+      /* 
+      // Caso della moltiplicazione per zero 
+      // Test dell'eliminazione della moltiplicazione
+      if(x == 0) {
+        Inst.replaceAllUsesWith(ConstantInt::get(Inst.getType(), 0));
+        Inst.eraseFromParent();
+        continue;
+      }
+      */
+      bool powerOfTwoMinus1 = (x > 1) && !(x-1 & x-2); // x = 17 
+      bool powerOfTwo       = (x > 0) && !(x & x-1);   // x = 16
+      bool powerOfTwoPlus1  = (x > 0) && !(x+1 & x);   // x = 15
+      bool division = (Inst.getOpcode() == Instruction::SDiv);
+      if(division && !powerOfTwo) continue;
 
-      Instruction *NewInst;
-
+      // Se è una divisione è anche un powerOfTwo
       if(powerOfTwo || powerOfTwoMinus1 || powerOfTwoPlus1){
-        int pot = static_cast<int>(log2(x));
-        if(powerOfTwoPlus1) pot++;
-
-        BinaryOperator *Shift;
-
-        if(division){
-          Shift = BinaryOperator::Create(
-            Instruction::LShr, I, ConstantInt::get(I->getType(), pot)
+        int pot = static_cast<int>(log2(x)) + (powerOfTwoPlus1 ? 1 : 0);
+        Instruction::BinaryOps shiftType = division ? Instruction::LShr : Instruction::Shl;
+        BinaryOperator *Shift = BinaryOperator::Create(
+            shiftType, I, ConstantInt::get(I->getType(), pot)
           );
-        }else{
-          Shift = BinaryOperator::Create(
-            Instruction::Shl, I, ConstantInt::get(I->getType(), pot)
-          );
-        }
-
-        
 
         Shift->insertAfter(&Inst);
         NewInst = Shift;
+
+        // A questo punto, se non è un powerOfTwo non è neanche una divisione
+        if(!powerOfTwo){
+          Instruction::BinaryOps opType = powerOfTwoMinus1 ? Instruction::Add : Instruction::Sub;
+          auto *opInst = BinaryOperator::Create(opType, Shift, I);
+          opInst->insertAfter(Shift);
+          NewInst = opInst;
+        }
         
-        if(powerOfTwoMinus1 && !division){
-          auto *AddInst = BinaryOperator::Create(
-            Instruction::Add, Shift, I
-          );
-
-          AddInst->insertAfter(Shift);
-          NewInst = AddInst;
-        }
-
-        if(powerOfTwoPlus1 && !division){
-          auto *SubInst = BinaryOperator::Create(
-            Instruction::Sub, Shift, I
-          );
-
-          SubInst->insertAfter(Shift);
-          NewInst = SubInst;
-        }
         Inst.replaceAllUsesWith(NewInst);
       }
-      
     }
   }
   
@@ -128,14 +112,14 @@ struct LocalOpt: PassInfoMixin<LocalOpt> {
   // Main entry point, takes IR unit to run the pass on (&F) and the corresponding pass manager (to be queried if need be)
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
 
-  	errs() << F.getName();
+  	errs() << F.getName() << ": ";
 
     if(runOnFunction(F))
-      errs() << "Transformed\n";
+      errs() << "Transformed";
     else
-      errs() << "Not Transformed\n";
-    
+      errs() << "Not Transformed";
 
+    errs() << "\n";
   	return PreservedAnalyses::all();
 }
 
