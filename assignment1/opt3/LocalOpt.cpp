@@ -28,22 +28,20 @@ using namespace llvm;
 
 bool runOnBasicBlock(BasicBlock &BB) {
   for (Instruction &Inst : BB) {
-    if (!isa<BinaryOperator>(&Inst)) continue;
-    auto *Op1 = Inst.getOperand(0);
-    auto *Op2 = Inst.getOperand(1);
-    bool isSub = (Inst.getOpcode() == Instruction::Sub);
-    bool isMul = (Inst.getOpcode() == Instruction::Mul);
-    
-    // Controlla se è del tipo c = a - 1
-    if (isSub || isMul) {
-      
-      for (auto Use = Inst.use_begin(); Use != Inst.use_end(); ++Use){
-        errs() << "\n INST: " << Inst << " | USE: " << *(dyn_cast<Instruction>(Use->getUser())) << "\n";
+    if (Inst.getOpcode() == Instruction::Sub) {
+      auto *Op1 = Inst.getOperand(0);
+      auto *Op2 = Inst.getOperand(1);
+
+      if (auto *AddInst = dyn_cast<Instruction>(Op1)) {
+        if (AddInst->getOpcode() == Instruction::Add) {
+          if (AddInst->getOperand(1) == Op2) {
+            
+
+            Inst.replaceAllUsesWith(AddInst->getOperand(0));
+
+          }
+        }
       }
-
-      //ConstantInt *intOp2 = dyn_cast<ConstantInt>(Op2);
-      //if(!intOp2) continue;
-
     }
   }
   return true;
