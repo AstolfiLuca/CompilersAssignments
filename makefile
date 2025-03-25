@@ -4,7 +4,7 @@ help:
 	@echo "  make clang          - Compila un file cpp in llvm"
 	@echo "  make cmake          - Genera la libreria ed esegue il make per un assignment"
 	@echo "  make optimize       - Esegui l'ottimizzazione con opt, specificando i passi"
-	@echo "    - Esempio: make optimize assignment=assignment1 test=file p=ai,sr"
+	@echo "    - Esempio: make optimize assignment=1 test=file p=ai,sr,mi"
 	@echo "  make clean_builds   - Rimuove i file generati"
 
 configure_env:
@@ -13,10 +13,14 @@ configure_env:
 	export LLVM_DIR=/usr/lib/llvm-19
 
 clang:
-	clang -O$(flag) -emit-llvm -S $(assignment)/test/cpp/$(test).cpp -o $(assignment)/test/ll/$(test).ll
+	cd assignment$(assignment)/test && \
+	clang -O$(flag) -emit-llvm -Xclang -disable-O0-optnone -S cpp/$(test).cpp -o bc/$(test)_mem.bc && \
+	opt -passes=mem2reg bc/$(test)_mem.bc -o bc/$(test).bc && \
+	llvm-dis bc/$(test).bc -o ll/$(test).ll && \
+	rm bc/$(test)_mem.bc
 
 cmake:
-	cd $(assignment)/ && \
+	cd assignment$(assignment)/ && \
 	mkdir -p build && \
 	cd build && \
 	cmake -DLT_LLVM_INSTALL_DIR=$$LLVM_DIR ../ && \
@@ -25,7 +29,7 @@ cmake:
 	mkdir -p ll_optimized
 	
 optimize:
-	cd $(assignment)/test && \
+	cd assignment$(assignment)/test && \
 	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p) ll/$(test).ll -o bc/$(test).optimized.bc && \
 	llvm-dis bc/$(test).optimized.bc -o ll_optimized/$(test).optimized.ll
 

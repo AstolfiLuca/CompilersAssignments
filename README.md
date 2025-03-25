@@ -1,5 +1,5 @@
 # CompilersAssignments
-This repository contains the code and the documentation related to the compilers part II assignments
+This repository contains the code and the documentation related to the course compilers part II assignments (little "at home" projects).
 
 Members in alphabetical order:
 - Alioto Cristian Piero
@@ -16,7 +16,7 @@ Members in alphabetical order:
 
 
 ## Introduction
-The objective of the course is understanding the front-end of the compiler, focusing on the compiler LLVM.
+The objective of the course is to understand the theory behind the front-end of modern compilers, focusing on the compiler LLVM.
 
 ## Setup
 To setup the workspace use:
@@ -24,11 +24,27 @@ To setup the workspace use:
 make configure_env
 ```
 
+To build the assignment:
+```bash
+make cmake assignment=<number>
+```
+
 ## Usage
 To run a test use:
-```bash
-make runtest assignment=assignment<number> opt=opt<number> test=<name_test>
-```
+- From .cpp to .optimized.ll 
+
+    ```bash
+    make clang assignment=<number> flag=<LLVM_flag_number> test=<testName> 
+    ```
+
+    Note:
+
+    This make command uses `mem2reg` pass (it removes stores and loads).
+
+- From .ll to .optimized.ll
+    ```bash
+    make optimize assignment=<number> p=<passName> test=<testName> 
+    ```
 
 To remove all build directories:
 ```bash
@@ -43,26 +59,42 @@ make clean_builds
     - Multi-Instruction Optimization
 
 ## Links
-LLVM front page:
+LLVM front page: https://llvm.org/
 
-LLVM Instruction documentation:
-
-https://llvm.org/doxygen/classllvm_1_1Instruction.html
+LLVM Instruction documentation: https://llvm.org/doxygen/classllvm_1_1Instruction.html
 
 ## Structure
 <!-- FILETREE START -->
 ```
 .
-├── academic_resources
-│   ├── 1- Introduction to Evolutionary Computing.pdf
-│   ├── 2 - MOO_theory_and_practice_II.pdf
-│   ├── 3 - MJ_in_a_nut.pdf
-│   ├── old_papers
-│   ├── resources.txt
-│   └── unimore_related 
-├── .gitignore
-├── README.md
-└── requirements.txt
+├── assignment1
+│   ├── build
+│   │   ├── CMakeCache.txt
+│   │   ├── CMakeFiles
+│   │   │   └── ...
+│   │   ├── cmake_install.cmake
+│   │   ├── libLocalOpt.so
+│   │   └── Makefile
+│   ├── CMakeLists.txt
+│   ├── opts
+│   │   ├── AlgebraicIdentity.cpp
+│   │   ├── LocalOpts.cpp
+│   │   ├── LocalOpts.h
+│   │   ├── MultiInstruction.cpp
+│   │   └── StrengthReduction.cpp
+│   └── test
+│       ├── bc
+│       │   └── ...
+│       ├── cpp
+│       │   ├── algebraic_identity.cpp
+│       │   ├── multi_instruction.cpp
+│       │   └── strength_reduction.cpp
+│       ├── ll
+│       │   └── ...
+│       └── ll_optimized
+│           └── ...
+├── makefile
+└── README.md
 
 4 directories, 7 files
 ```

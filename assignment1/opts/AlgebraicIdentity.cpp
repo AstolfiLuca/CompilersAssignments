@@ -7,7 +7,7 @@
 
 bool runOnBasicBlockOpt1(BasicBlock &BB) {
   for(Instruction &Inst : BB){
-    if (isa<BinaryOperator>(&Inst)){
+    if (Inst.isBinaryOp()){
       auto *Op1 = Inst.getOperand(0);
       auto *Op2 = Inst.getOperand(1);
       auto OpCode = Inst.getOpcode();
