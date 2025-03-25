@@ -25,90 +25,27 @@
 
 using namespace llvm;
 
-#include <queue>
 
 bool runOnBasicBlock(BasicBlock &BB) {
   for (Instruction &Inst : BB) {
-    if (Inst.getOpcode() == Instruction::Add) {
-      // b = a + 1
-      auto *Op1 = Inst.getOperand(0);
-      auto *Op2 = Inst.getOperand(1);
-
-      // Non ottimizziamo se ci sono due numeri
-      if (dyn_cast<ConstantInt>(Op1) && dyn_cast<ConstantInt>(Op2)) break;
-
-      // Non ottimizziamo se ci sono due registri
-      if (!(dyn_cast<ConstantInt>(Op1) || dyn_cast<ConstantInt>(Op2))) break;
-
-      // Queue to store the uses of instructions
-      std::queue<Use *> useQueue;
-
-      // Add initial uses of the instruction
-      for (auto Uses = Inst.use_begin(); Uses != Inst.use_end(); ++Uses) {
-        useQueue.push(&*Uses);
+    if (!isa<BinaryOperator>(&Inst)) continue;
+    auto *Op1 = Inst.getOperand(0);
+    auto *Op2 = Inst.getOperand(1);
+    bool isSub = (Inst.getOpcode() == Instruction::Sub);
+    bool isMul = (Inst.getOpcode() == Instruction::Mul);
+    
+    // Controlla se è del tipo c = a - 1
+    if (isSub || isMul) {
+      
+      for (auto Use = Inst.use_begin(); Use != Inst.use_end(); ++Use){
+        errs() << "\n INST: " << Inst << " | USE: " << *(dyn_cast<Instruction>(Use->getUser())) << "\n";
       }
 
-      // Process the queue
-      while (!useQueue.empty()) {
-        Use *OpUse = useQueue.front();
-        useQueue.pop();
+      //ConstantInt *intOp2 = dyn_cast<ConstantInt>(Op2);
+      //if(!intOp2) continue;
 
-        // Caso Store
-        if (auto *storeOp = dyn_cast<StoreInst>(OpUse->getUser())) {
-          auto ptrStore = storeOp->getOperand(1);
-
-          // Add uses of the store operand
-          for (auto storeUses = ptrStore->use_begin(); storeUses != ptrStore->use_end(); ++storeUses) {
-            useQueue.push(&*storeUses);
-          }
-
-          // Caso Load
-        } else if (auto *loadOp = dyn_cast<LoadInst>(OpUse->getUser())) {
-          auto ptrLoad = loadOp->getOperand(0);
-
-          // Add uses of the load operand
-          for (auto loadUses = ptrLoad->use_begin(); loadUses != ptrLoad->use_end(); ++loadUses) {
-            useQueue.push(&*loadUses);
-          }
-
-          // c = b - 1, ovvero l'operazione che usa b
-          if (auto *Op = dyn_cast<Instruction>(OpUse->getUser())) {
-            if (Op->getOpcode() == Instruction::Sub) {
-              // Non valutiamo l'operando 0 perchè renderebbe la variabile negativa (es. non deve succedere 1 - b)
-              auto Op2use = Op->getOperand(1);
-              if (auto num = dyn_cast<ConstantInt>(Op2use)) {
-                Value* registro = nullptr;
-                bool trovato = false;
-
-                if (num == dyn_cast<ConstantInt>(Op1)){
-                  registro = Op2;
-                  trovato = true;
-                } else if (num == dyn_cast<ConstantInt>(Op2)){
-                  registro = Op1;
-                  trovato = true;
-                }
-
-                if (trovato) { // troviamo la "a"
-                  // dobbiamo convertire c = b -1 -> c = a
-
-                  // Creazione di un'allocazione di memoria per Op1
-                  IRBuilder<> Builder(&Inst); // Usa IRBuilder per semplificare l'inserimento
-                  AllocaInst *Alloca = Builder.CreateAlloca(Op1->getType());
-
-                  // Creazione dell'istruzione Store
-                  Instruction *NewInst = Builder.CreateStore(num, Alloca);
-
-                  // Inserisci la nuova istruzione dopo l'istruzione corrente
-                  NewInst->insertAfter(&Inst);
-                }
-              }
-            }
-          }
-        }
-      }
     }
   }
-
   return true;
 }
 
