@@ -15,7 +15,7 @@ configure_env:
 clang:
 	cd assignment$(assignment)/test && \
 	clang -O$(flag) -emit-llvm -Xclang -disable-O0-optnone -S cpp/$(test).cpp -o bc/$(test)_mem.bc && \
-	opt -passes=mem2reg bc/$(test)_mem.bc -o bc/$(test).bc && \
+	opt -p mem2reg bc/$(test)_mem.bc -o bc/$(test).bc && \
 	llvm-dis bc/$(test).bc -o ll/$(test).ll && \
 	rm bc/$(test)_mem.bc
 
@@ -30,7 +30,7 @@ cmake:
 	
 optimize:
 	cd assignment$(assignment)/test && \
-	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p) ll/$(test).ll -o bc/$(test).optimized.bc && \
+	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p),dce ll/$(test).ll -o bc/$(test).optimized.bc && \
 	llvm-dis bc/$(test).optimized.bc -o ll_optimized/$(test).optimized.ll
 
 clean_builds:
