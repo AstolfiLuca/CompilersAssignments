@@ -10,18 +10,17 @@ bool runOnBasicBlockOpt1(BasicBlock &BB) {
     if (Inst.isBinaryOp()){
       auto *Op1 = Inst.getOperand(0);
       auto *Op2 = Inst.getOperand(1);
-      auto OpCode = Inst.getOpcode();
       ConstantInt *intOp1 = dyn_cast<ConstantInt>(Op1);
       ConstantInt *intOp2 = dyn_cast<ConstantInt>(Op2);
 
       // Se uno dei due operandi è 0, l'addizione è inutile
-      if (OpCode == Instruction::Add) {
+      if (Inst.getOpcode() == Instruction::Add) {
         if (intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(Op2);
         if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(Op1);
       }
 
       // Se uno dei due operandi è 1, la moltiplicazione è inutile
-      if (OpCode == Instruction::Mul) {
+      if (Inst.getOpcode() == Instruction::Mul) {
         if (intOp1 && intOp1->isOne()) Inst.replaceAllUsesWith(Op2);
         if (intOp2 && intOp2->isOne()) Inst.replaceAllUsesWith(Op1);
       }
