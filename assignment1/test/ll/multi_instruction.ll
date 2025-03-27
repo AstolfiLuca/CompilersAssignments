@@ -41,6 +41,9 @@ define dso_local noundef i32 @_Z35multi_instruction_optimizazion_testiiii(i32 no
   %38 = sub nsw i32 -1, %0
   %39 = add nsw i32 -1, %38
   %40 = add nsw i32 %39, 5
+  %41 = sub nsw i32 1, %0
+  %42 = add nsw i32 1, %41
+  %43 = add nsw i32 %42, 5
   ret i32 %37
 }
 

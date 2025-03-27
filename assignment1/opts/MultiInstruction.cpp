@@ -4,71 +4,70 @@
 
 #include "LocalOpts.h"
 
-bool isOppositeInstr(int opcode, int opcode2){
+/*
+    Nota per la rilettura:
+    b = a + 1; // "used" si riferisce alla seconda istruzione che controlliamo, quella usata dalla prima
+    c = b - 1; // "inst" si riferisce alla prima istruzione che controlliamo 
+    c = a      // Risultato dell'ottimizzazione, poichè c = a + 1 - 1 = a
+  */
+bool isOptimizableOpt3(int instOpCode, int usedOpCode, int instNumber, int usedNumber, bool isFirstInstOpNumber, bool isFirstUsedOpNumber){
   return (
-    opcode == Instruction::Add && opcode2 == Instruction::Sub ||
-    opcode == Instruction::Sub && opcode2 == Instruction::Add ||
-    opcode == Instruction::Mul && opcode2 == Instruction::SDiv
+    instNumber == usedNumber && (
+      (usedOpCode == Instruction::Add && instOpCode == Instruction::Sub && !isFirstInstOpNumber) || 
+      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Add && !isFirstUsedOpNumber) || 
+      (usedOpCode == Instruction::Mul && instOpCode == Instruction::SDiv && !isFirstInstOpNumber) ||
+      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Sub && isFirstInstOpNumber && isFirstUsedOpNumber)
+    ) || 
+    instNumber == -usedNumber && usedOpCode == Instruction::Add && instOpCode == Instruction::Add
   );
 }
 
 bool runOnBasicBlockOpt3(BasicBlock &BB) {
   for (Instruction &Inst : BB) {
     if(Inst.isBinaryOp()){
-      // Instruzione originale
-      int originalOpCode = Inst.getOpcode();  // Codice operazione istruzione originale
-      auto *originalOp1 = Inst.getOperand(0); // 1° Operando
-      auto *originalOp2 = Inst.getOperand(1); // 2° Operando
-      
-      auto *originalNumber = ConstantInt::get(Inst.getType(), 0); // Operando numerico
-      Instruction *usedInst; // Operando istruzione (istruzione usata)
-      bool isOriginalFirstOpNumber = true; // Booleano true se il primo operando è un numero, false altrimenti
-      
-      if (originalNumber = dyn_cast<ConstantInt>(originalOp1)) usedInst = dyn_cast<Instruction>(originalOp2);   
-      else if (originalNumber = dyn_cast<ConstantInt>(originalOp2)){
-        usedInst = dyn_cast<Instruction>(originalOp1);      
-        isOriginalFirstOpNumber = false; // 2° Operando
-      }
-      if(!usedInst || !originalNumber) continue; // Se non c'è un operando istruzione, vado avanti
-      
-      int originalOpValue = cast<ConstantInt>(originalNumber)->getSExtValue();
 
-      // Istruzione usata
-      int usedOpCode = usedInst->getOpcode();
-      auto *usedOp1 = usedInst->getOperand(0);
-      auto *usedOp2 = usedInst->getOperand(1);
-
-      auto *usedNumber = ConstantInt::get(Inst.getType(), 0);
-      Value *usedInstOp; // Tipo Value per comprendere anche i parametri (oltre alle istruzioni)
-      bool isUsedFirstOpNumber = true;
-      if (usedNumber = dyn_cast<ConstantInt>(usedOp1)) usedInstOp = usedOp2;   
-      else if (usedNumber = dyn_cast<ConstantInt>(usedOp2)){
-        usedInstOp = usedOp1; 
-        isUsedFirstOpNumber = false;
-      }
-      if(!usedInstOp || !usedNumber) continue;
-
-      int usedOpValue = cast<ConstantInt>(usedNumber)->getSExtValue();
+      // Istruzione originale
+      ConstantInt *instNumberOp; // Operando numerico dell'istruzione originale
+      Instruction *Used;       // Operando registro dell'originale (istruzione usata)
+      bool isFirstInstOpNumber; // True se il primo operando dell'istruzione originale è un numero, false altrimenti
       
-      bool optimize = false;
-      if (isOppositeInstr(usedOpCode, originalOpCode) && usedOpValue == originalOpValue){
-        optimize = true;
-        if(originalOpCode == Instruction::Sub && isOriginalFirstOpNumber) optimize = false;
-        if(usedOpCode == Instruction::Sub && isUsedFirstOpNumber) optimize = false;
+      if (instNumberOp = dyn_cast<ConstantInt>(Inst.getOperand(0))) { //Controllo se il primo operando è un numero
+        Used = dyn_cast<Instruction>(Inst.getOperand(1));
+        isFirstInstOpNumber = true;
       } 
-      else
-        if(usedOpCode == originalOpCode && originalOpCode != Instruction::SDiv){
-          if (originalOpCode == Instruction::Add && (usedOpValue + originalOpValue == 0))  
-            optimize = true;
-          else 
-            if(originalOpCode == Instruction::Sub && usedOpValue == originalOpValue)
-              optimize = true;
-        }
+      else if (instNumberOp = dyn_cast<ConstantInt>(Inst.getOperand(1))){
+        Used = dyn_cast<Instruction>(Inst.getOperand(0));      
+        isFirstInstOpNumber = false; 
+      } 
+      
+      if(!Used || !instNumberOp) 
+        continue;
+      
+      // Istruzione utilizzata dall'originale
+      ConstantInt *usedNumberOp;  // Operando numerico
+      Value *replaceRegister;   // Operando registro con cui rimpiazziamo l'originale
+      bool isFirstUsedOpNumber; // True se il primo operando dell'istruzione utilizzata è un numero, false altrimenti
+      
+      if (usedNumberOp = dyn_cast<ConstantInt>(Used->getOperand(0))){ // Controllo se il primo operando è un numero
+        replaceRegister = Used->getOperand(1); // No cast perchè è un Value
+        isFirstUsedOpNumber = true;
+      }
+      else if (usedNumberOp = dyn_cast<ConstantInt>(Used->getOperand(1))){ // Altrimenti controllo se il secondo operando è un numero
+        replaceRegister = Used->getOperand(0); // No cast perchè è un Value
+        isFirstUsedOpNumber = false;
+      }
+      
+      if(!replaceRegister || !usedNumberOp) 
+        continue;
+      
+      int instNumber = cast<ConstantInt>(instNumberOp)->getSExtValue(); // Valore del numero nell'operazione originale
+      int usedNumber = cast<ConstantInt>(usedNumberOp)->getSExtValue(); // Valore del numero nell'operazione utilizzata
+      
+      if(isOptimizableOpt3(Inst.getOpcode(), Used->getOpcode(), instNumber, usedNumber, isFirstInstOpNumber, isFirstUsedOpNumber)) 
+        Inst.replaceAllUsesWith(replaceRegister);
 
-      if(optimize) Inst.replaceAllUsesWith(usedInstOp);
-        
-    } // if binary
-  } // for
+    } 
+  } 
   return true;
 }
 

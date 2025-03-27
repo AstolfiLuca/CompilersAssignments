@@ -8,39 +8,54 @@ define dso_local noundef i32 @_Z35multi_instruction_optimizazion_testiiii(i32 no
   %5 = add nsw i32 %0, 1
   %6 = sub nsw i32 %5, 1
   %7 = add nsw i32 %0, 5
+
   %8 = add nsw i32 1, %0
   %9 = sub nsw i32 %8, 1
   %10 = add nsw i32 %0, 5
+
   %11 = sub nsw i32 %0, 1
   %12 = add nsw i32 %11, 1
   %13 = add nsw i32 %0, 5
+
   %14 = add nsw i32 -1, %0
   %15 = add nsw i32 %14, 1
   %16 = add nsw i32 %0, 5
+
   %17 = sub nsw i32 1, %0
   %18 = sub nsw i32 1, %17
   %19 = add nsw i32 %0, 5
+
   %20 = mul nsw i32 %0, 3
   %21 = sdiv i32 %20, 3
   %22 = add nsw i32 %0, 5
+
   %23 = mul nsw i32 3, %0
   %24 = sdiv i32 %23, 3
   %25 = add nsw i32 %0, 5
+
   %26 = add nsw i32 1, %0
   %27 = add nsw i32 -1, %26
   %28 = add nsw i32 %0, 5
+
   %29 = sub nsw i32 -1, %0
   %30 = sub nsw i32 -1, %29
   %31 = add nsw i32 %0, 5
+
   %32 = sub nsw i32 %0, 1
   %33 = add nsw i32 1, %32
   %34 = add nsw i32 %0, 5
+
   %35 = add nsw i32 1, %0
   %36 = sub nsw i32 1, %35
   %37 = add nsw i32 %36, 5
+Op
   %38 = sub nsw i32 -1, %0
   %39 = add nsw i32 -1, %38
   %40 = add nsw i32 %39, 5
+
+  %41 = sub nsw i32 1, %0
+  %42 = add nsw i32 1, %41
+  %43 = add nsw i32 %42, 5
   ret i32 %37
 }
 
