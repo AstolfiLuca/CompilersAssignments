@@ -1,14 +1,13 @@
-int strength_reduction_test(int a, int b){
-    a = a * 15; // Ottimizzato
-    a = a * 9; // Ottimizzato
-    a = a * 6; // Non ottimizzato
-    a = a * (-15); // Non ottimizzato
-    int c = b / 15; // Non ottimizzato
-    b = b / 16; // Ottimizzato
-    // int g = a * 0; 
-    return b; // 2
+int strength_reduction_test(int x){
+    int a = x * 15; // Ottimizzato
+    int b = a * 9; // Ottimizzato
+    int c = b * 6; // Non ottimizzato
+    int d = c * (-15); // Non ottimizzato
+    int e = d / d; // Non ottimizzato
+    int f = e / 16; // Ottimizzato 
+    return f;
 }
 
 int main(){
-    return strength_reduction_test(3, 44);
+    return strength_reduction_test(3);
 }

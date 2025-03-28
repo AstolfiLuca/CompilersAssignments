@@ -7,7 +7,7 @@
 /*
     Nota per la rilettura:
     b = a + 1; // "used" si riferisce alla seconda istruzione che controlliamo, quella usata dalla prima
-    c = b - 1; // "inst" si riferisce alla prima istruzione che controlliamo 
+    c = b - 1; // "inst" si riferisce alla prima istruzione che controlliamo (originale)
     c = a      // Risultato dell'ottimizzazione, poichè c = a + 1 - 1 = a
   */
 bool isOptimizableOpt3(int instOpCode, int usedOpCode, int instNumber, int usedNumber, bool isFirstInstOpNumber, bool isFirstUsedOpNumber){
@@ -24,18 +24,18 @@ bool isOptimizableOpt3(int instOpCode, int usedOpCode, int instNumber, int usedN
 
 bool runOnBasicBlockOpt3(BasicBlock &BB) {
   for (Instruction &Inst : BB) {
-    if(Inst.isBinaryOp()){
+    if(Inst.getOpcode() == Instruction::Add || Inst.getOpcode() == Instruction::Sub || Inst.getOpcode() == Instruction::SDiv) {
 
       // Istruzione originale
       ConstantInt *instNumberOp; // Operando numerico dell'istruzione originale
       Instruction *Used;       // Operando registro dell'originale (istruzione usata)
       bool isFirstInstOpNumber; // True se il primo operando dell'istruzione originale è un numero, false altrimenti
       
-      if (instNumberOp = dyn_cast<ConstantInt>(Inst.getOperand(0))) { //Controllo se il primo operando è un numero
+      if (instNumberOp = dyn_cast<ConstantInt>(Inst.getOperand(0))) { 
         Used = dyn_cast<Instruction>(Inst.getOperand(1));
         isFirstInstOpNumber = true;
       } 
-      else if (instNumberOp = dyn_cast<ConstantInt>(Inst.getOperand(1))){
+      else if (instNumberOp = dyn_cast<ConstantInt>(Inst.getOperand(1))) {
         Used = dyn_cast<Instruction>(Inst.getOperand(0));      
         isFirstInstOpNumber = false; 
       } 
@@ -43,16 +43,16 @@ bool runOnBasicBlockOpt3(BasicBlock &BB) {
       if(!Used || !instNumberOp) 
         continue;
       
-      // Istruzione utilizzata dall'originale
+      // Istruzione usata dall'originale
       ConstantInt *usedNumberOp;  // Operando numerico
       Value *replaceRegister;   // Operando registro con cui rimpiazziamo l'originale
       bool isFirstUsedOpNumber; // True se il primo operando dell'istruzione utilizzata è un numero, false altrimenti
       
-      if (usedNumberOp = dyn_cast<ConstantInt>(Used->getOperand(0))){ // Controllo se il primo operando è un numero
+      if (usedNumberOp = dyn_cast<ConstantInt>(Used->getOperand(0))) { // Controllo se il primo operando è un numero
         replaceRegister = Used->getOperand(1); // No cast perchè è un Value
         isFirstUsedOpNumber = true;
       }
-      else if (usedNumberOp = dyn_cast<ConstantInt>(Used->getOperand(1))){ // Altrimenti controllo se il secondo operando è un numero
+      else if (usedNumberOp = dyn_cast<ConstantInt>(Used->getOperand(1))) { // Altrimenti controllo se il secondo operando è un numero
         replaceRegister = Used->getOperand(0); // No cast perchè è un Value
         isFirstUsedOpNumber = false;
       }
@@ -61,7 +61,7 @@ bool runOnBasicBlockOpt3(BasicBlock &BB) {
         continue;
       
       int instNumber = cast<ConstantInt>(instNumberOp)->getSExtValue(); // Valore del numero nell'operazione originale
-      int usedNumber = cast<ConstantInt>(usedNumberOp)->getSExtValue(); // Valore del numero nell'operazione utilizzata
+      int usedNumber = cast<ConstantInt>(usedNumberOp)->getSExtValue(); // Valore del numero nell'operazione usata
       
       if(isOptimizableOpt3(Inst.getOpcode(), Used->getOpcode(), instNumber, usedNumber, isFirstInstOpNumber, isFirstUsedOpNumber)) 
         Inst.replaceAllUsesWith(replaceRegister);

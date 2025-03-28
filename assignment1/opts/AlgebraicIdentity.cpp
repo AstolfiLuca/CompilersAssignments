@@ -6,23 +6,45 @@
 #include "LocalOpts.h"
 
 bool runOnBasicBlockOpt1(BasicBlock &BB) {
-  for(Instruction &Inst : BB){
-    if (Inst.isBinaryOp()){
-      auto *Op1 = Inst.getOperand(0);
-      auto *Op2 = Inst.getOperand(1);
-      ConstantInt *intOp1 = dyn_cast<ConstantInt>(Op1);
-      ConstantInt *intOp2 = dyn_cast<ConstantInt>(Op2);
+  Value *op1, *op2, *zero, *one;
+  ConstantInt *intOp1, *intOp2;
 
-      // Se uno dei due operandi è 0, l'addizione è inutile
-      if (Inst.getOpcode() == Instruction::Add) {
-        if (intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(Op2);
-        if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(Op1);
-      }
+  for(Instruction &Inst : BB) {
+    if (Inst.isBinaryOp()) {
+      zero = ConstantInt::get(Inst.getType(), 0);
+      one = ConstantInt::get(Inst.getType(), 1);
+      op1 = Inst.getOperand(0);
+      op2 = Inst.getOperand(1);
+      intOp1 = dyn_cast<ConstantInt>(op1);
+      intOp2 = dyn_cast<ConstantInt>(op2);
 
-      // Se uno dei due operandi è 1, la moltiplicazione è inutile
-      if (Inst.getOpcode() == Instruction::Mul) {
-        if (intOp1 && intOp1->isOne()) Inst.replaceAllUsesWith(Op2);
-        if (intOp2 && intOp2->isOne()) Inst.replaceAllUsesWith(Op1);
+      switch(Inst.getOpcode()) {
+        case Instruction::Add:
+          if (intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(op2);
+          else if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(op1);
+          break;
+
+        case Instruction::Sub:
+          if (op1 == op2) Inst.replaceAllUsesWith(zero);
+          else if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(op1);
+          break;
+
+        case Instruction::Mul:
+          if(intOp1) {
+            if (intOp1->isZero()) Inst.replaceAllUsesWith(zero);
+            else if (intOp1->isOne()) Inst.replaceAllUsesWith(op2);
+          } 
+          else if(intOp2) {
+            if (intOp2->isZero()) Inst.replaceAllUsesWith(zero);
+            else if (intOp2->isOne()) Inst.replaceAllUsesWith(op1);
+          }
+          break;
+
+        case Instruction::SDiv:
+          if (op1 == op2) Inst.replaceAllUsesWith(one);
+          else if(intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(zero);
+          else if(intOp2 && intOp2->isOne()) Inst.replaceAllUsesWith(op1);
+          break;
       }
     }
   }
