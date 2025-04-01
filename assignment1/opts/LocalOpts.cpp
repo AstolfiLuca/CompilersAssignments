@@ -31,7 +31,7 @@ llvm::PassPluginLibraryInfo getTestPassPluginInfo() {
   };
 }
 
-// This is the core interface for pass plugins. It guarantees that 'opt' will be able to recognize LocalOpt when added to the pass pipeline on the command line, i.e. via '-p local-opt'
+// This is the core interface for pass plugins. It guarantees that 'opt' will be able to recognize LocalOpt when added to the pass pipeline on the command line, i.e. via '-p LocalOpt'
 extern "C" LLVM_ATTRIBUTE_WEAK::llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() {
   return getTestPassPluginInfo();
 }

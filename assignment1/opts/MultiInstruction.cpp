@@ -13,12 +13,14 @@
 bool isOptimizableOpt3(int instOpCode, int usedOpCode, int instNumber, int usedNumber, bool isFirstInstOpNumber, bool isFirstUsedOpNumber){
   return (
     instNumber == usedNumber && (
-      (usedOpCode == Instruction::Add && instOpCode == Instruction::Sub && !isFirstInstOpNumber) || 
-      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Add && !isFirstUsedOpNumber) || 
+      (usedOpCode == Instruction::Add && instOpCode == Instruction::Sub  && !isFirstInstOpNumber) || 
+      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Add  && !isFirstUsedOpNumber) || 
       (usedOpCode == Instruction::Mul && instOpCode == Instruction::SDiv && !isFirstInstOpNumber) ||
-      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Sub && isFirstInstOpNumber && isFirstUsedOpNumber)
+      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Sub  && isFirstInstOpNumber && isFirstUsedOpNumber)
     ) || 
-    instNumber == -usedNumber && usedOpCode == Instruction::Add && instOpCode == Instruction::Add
+    instNumber == -usedNumber && (
+      (usedOpCode == Instruction::Add && instOpCode == Instruction::Add)
+    )
   );
 }
 
