@@ -12,7 +12,13 @@ configure_env:
 	export LD_LIBRARY_PATH=/usr/lib/llvm-19/lib:$$LD_LIBRARY_PATH
 	export LLVM_DIR=/usr/lib/llvm-19
 
-# Create/Update the "build" directory with the latest rules from LocalOpts(.h/.cpp)  
+clang:
+	cd assignment$(assignment)/test && \
+	clang -O$(flag) -emit-llvm -Xclang -disable-O0-optnone -S cpp/$(test).cpp -o bc/$(test)_mem.bc && \
+	opt -p mem2reg bc/$(test)_mem.bc -o bc/$(test).bc && \
+	llvm-dis bc/$(test).bc -o ll/$(test).ll && \
+	rm bc/$(test)_mem.bc
+
 cmake:
 	cd assignment$(assignment)/ && \
 	mkdir -p build && \
@@ -34,7 +40,7 @@ clang:
 # Create the test (.ll) optimization (.optimized.ll) 
 optimize:
 	cd assignment$(assignment)/test && \
-	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p) ll/$(test).ll -o bc/$(test).optimized.bc && \
+	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p),dce ll/$(test).ll -o bc/$(test).optimized.bc && \
 	llvm-dis bc/$(test).optimized.bc -o ll_optimized/$(test).optimized.ll
 
 clean_builds:
