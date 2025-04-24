@@ -29,8 +29,44 @@ ALGORITMO:
 */
 
 #include "LocalOpts.h"
+#include <llvm/ADT/SetVector.h>
+#include <llvm/Analysis/LoopInfo.h>
 
-bool runOnBasicBlockOpt1(BasicBlock &BB) {
+//primitiva contains
+void isLoopInvariant(Instruction &Inst, Loop &L, SetVector<Instruction*> &invariant) {
+  bool isInvariant = true;
+  for(auto *opIter = Inst.op_begin(); opIter != Inst.op_end(); ++opIter){  // Itero su tutti gli operandi dell'istruzione
+    Value *V = opIter->get();
+
+    if (isa<Constant>(V) || isa<Argument>(V)) //operando costante o argomento di funzione sono loop invariant
+      continue;
+
+    if (Instruction *I = dyn_cast<Instruction>(V)){ //è un'istruzione di qualche tipo
+        if (!L.contains(I)) //esterna al loop le reaching definitions sono fuori dal loop è loop invariant
+          invariant.insert(I);
+
+        else if (!isa<PHINode>(I)) { // è un'istruzione non PHI
+          if (invariant.contains(I)){  //se è già inserita in invariant è loop invariant
+            continue;
+          }
+          else
+            isInvariant = false; //altrimenti non è loop invariant
+        }
+        else isInvariant = false; //se è un PHI node non è loop invariant
+
+      }
+    else
+      isInvariant = false; //altrimenti non è loop invariant
+
+  }
+  if (isInvariant) 
+    invariant.insert(&Inst); //se tutti gli operandi sono loop invariant allora anche l'istruzione è loop invariant
+  
+    
+}
+
+
+bool runOnBasicBlock(BasicBlock &BB) {
   for(Instruction &Inst : BB) {
 
   }
@@ -38,11 +74,11 @@ bool runOnBasicBlockOpt1(BasicBlock &BB) {
 }
 
 
-bool runOnFunctionOpt1(Function &F) {
+bool runOnFunction(Function &F) {
   bool Transformed = false;
 
   for (auto Iter = F.begin(); Iter != F.end(); ++Iter) {
-    if (runOnBasicBlockOpt1(*Iter)) {
+    if (runOnBasicBlock(*Iter)) {
       Transformed = true;
     }
   }
@@ -50,13 +86,26 @@ bool runOnFunctionOpt1(Function &F) {
   return Transformed;
 }
 
-PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &) {
-    errs() << F.getName() << ": ";
+PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &AM) {
+  SetVector<Instruction*> invariant;
 
-    if (runOnFunctionOpt1(F))
-        errs() << "Transformed by LoopInvariant\n";
-    else
-        errs() << "Not Transformed by LoopInvariant\n";
+  LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
 
-    return PreservedAnalyses::all();
+  for (Loop *L : LI) {
+    for (BasicBlock *BB : L->blocks()) {
+      for (Instruction &Inst : *BB) {
+        isLoopInvariant(Inst, *L, invariant); // Controllo se l'istruzione è loop invariant
+      }
+    }
+  }
+  
+  // Stampa il vettore delle istruzioni loop-invariant
+  for (Instruction *I : invariant) {
+    I->print(errs());
+    llvm::errs() << "\n";
+  }
+  
+
+
+  return PreservedAnalyses::all();
 }

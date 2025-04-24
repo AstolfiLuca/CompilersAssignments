@@ -33,7 +33,7 @@ clang:
 # Create the test (.ll) optimization (.optimized.ll) 
 optimize:
 	cd assignment$(assignment)/test && \
-	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p),dce ll/$(test).ll -o bc/$(test).optimized.bc && \
+	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p) ll/$(test).ll -o bc/$(test).optimized.bc && \
 	llvm-dis bc/$(test).optimized.bc -o ll_optimized/$(test).optimized.ll
 
 clean_builds:
