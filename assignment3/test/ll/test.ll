@@ -7,19 +7,30 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local noundef i32 @main() #0 {
   br label %1
 
-1:                                                ; preds = %3, %0
-  %.0 = phi i32 [ 0, %0 ], [ %7, %3 ]
+1:                                                ; preds = %8, %0
+  %.0 = phi i32 [ 0, %0 ], [ %11, %8 ]
   %2 = icmp slt i32 %.0, 5
-  br i1 %2, label %3, label %8
+  br i1 %2, label %3, label %12
 
 3:                                                ; preds = %1
   %4 = add nsw i32 3, 5
-  %5 = add nsw i32 %4, 1
-  %6 = add nsw i32 2, 2
-  %7 = add nsw i32 %.0, 1
+  %5 = icmp slt i32 %4, 3
+  br i1 %5, label %6, label %7
+
+6:                                                ; preds = %3
+  br label %8
+
+7:                                                ; preds = %3
+  br label %8
+
+8:                                                ; preds = %7, %6
+  %.01 = phi i32 [ 2, %6 ], [ 3, %7 ]
+  %9 = add nsw i32 %4, 1
+  %10 = add nsw i32 %.01, 2
+  %11 = add nsw i32 %.0, 1
   br label %1, !llvm.loop !6
 
-8:                                                ; preds = %1
+12:                                               ; preds = %1
   ret i32 5
 }
 
@@ -33,6 +44,6 @@ attributes #0 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"Ubuntu clang version 19.1.7 (++20250114103320+cd708029e0b2-1~exp1~20250114103432.75)"}
+!5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}

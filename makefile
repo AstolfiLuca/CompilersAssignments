@@ -2,7 +2,8 @@ help:
 	@echo "Specifica un target esplicito per eseguire operazioni sul progetto:"
 	@echo "  make configure_env  - Configura l'ambiente"
 	@echo "  make clang          - Compila un file cpp in llvm"
-	@echo "  make cmake          - Genera la libreria ed esegue il make per un assignment"
+	@echo "  make cmake          - Genera la libreria per un assignment"
+	@echo "  make build          - Compila la libreria per un assignment"
 	@echo "  make optimize       - Esegui l'ottimizzazione con opt, specificando i passi"
 	@echo "    - Esempio: make optimize assignment=1 test=file p=ai,sr,mi"
 	@echo "  make clean_builds   - Rimuove i file generati"
@@ -15,11 +16,18 @@ configure_env:
 cmake:
 	cd assignment$(assignment)/ && \
 	mkdir -p build && \
+	mkdir -p test && \
 	cd build && \
 	cmake -DLT_LLVM_INSTALL_DIR=$$LLVM_DIR ../ && \
-	make && \
 	cd ../test && \
+	mkdir -p cpp && \
+	mkdir -p bc && \
+	mkdir -p ll && \
 	mkdir -p ll_optimized
+	
+build:
+	cd assignment$(assignment)/build && \
+	make
 
 # Create the test (.ll) from the .cpp (passing through the bytecode .bc), given a specific flag. 
 # Note: it removes the load/store instructions
