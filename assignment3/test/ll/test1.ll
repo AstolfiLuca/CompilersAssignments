@@ -1,36 +1,36 @@
-; ModuleID = 'bc/test.optimized.bc'
-source_filename = "cpp/test.cpp"
+; ModuleID = 'bc/test1.bc'
+source_filename = "cpp/test1.cpp"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable
 define dso_local noundef i32 @main() #0 {
-  %1 = add nsw i32 3, 5
-  %2 = add nsw i32 %1, 1
-  br label %3
+  br label %1
 
-3:                                                ; preds = %9, %0
-  %.0 = phi i32 [ 0, %0 ], [ %11, %9 ]
-  %4 = icmp slt i32 %.0, 5
-  br i1 %4, label %5, label %12
+1:                                                ; preds = %8, %0
+  %.0 = phi i32 [ 0, %0 ], [ %11, %8 ]
+  %2 = icmp slt i32 %.0, 5
+  br i1 %2, label %3, label %12
 
-5:                                                ; preds = %3
-  %6 = icmp slt i32 %.0, 3
-  br i1 %6, label %7, label %8
+3:                                                ; preds = %1
+  %4 = add nsw i32 3, 5
+  %5 = icmp slt i32 %.0, 3
+  br i1 %5, label %6, label %7
 
-7:                                                ; preds = %5
-  br label %9
+6:                                                ; preds = %3
+  br label %8
 
-8:                                                ; preds = %5
-  br label %9
+7:                                                ; preds = %3
+  br label %8
 
-9:                                                ; preds = %8, %7
-  %.01 = phi i32 [ 2, %7 ], [ 3, %8 ]
+8:                                                ; preds = %7, %6
+  %.01 = phi i32 [ 2, %6 ], [ 3, %7 ]
+  %9 = add nsw i32 %4, 1
   %10 = add nsw i32 %.01, 2
   %11 = add nsw i32 %.0, 1
-  br label %3, !llvm.loop !6
+  br label %1, !llvm.loop !6
 
-12:                                               ; preds = %3
+12:                                               ; preds = %1
   ret i32 5
 }
 

@@ -6,7 +6,7 @@ int main(){
     int i = 0;
     while(i<5){
        a = b + c;
-       if (a<3) e = 2;
+       if (i<3) e = 2;
        else e = 3;
        int d = a + 1;
        int f = e + 2;
