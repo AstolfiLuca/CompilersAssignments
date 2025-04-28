@@ -17,13 +17,13 @@ int fun(int a, int b, int c){
                 f = b + 1; // loop invariant (si code motion)
                  
                 if(e > 5){
-                    c++;  // no loop invariant
+                    c++;  // si loop invariant (si code motion)
                     break;
                 }
                 else
                     e++; // no loop invariant
                 
-                z = e + 5;
+                z = e + 5; // no loop invariant
                 
             }
         }

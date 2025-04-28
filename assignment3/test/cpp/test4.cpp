@@ -19,7 +19,7 @@ int fun(int a, int b, int c){
         f = b + 1; // loop invariant (si code motion)
          
         if(e > 5){
-            c++;  // no loop invariant
+            c++;  // loop invariant (si code motion)
             break;
         }
         else

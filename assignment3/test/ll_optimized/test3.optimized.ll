@@ -10,7 +10,7 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %6
 
 6:                                                ; preds = %21, %3
-  %.01 = phi i32 [ %2, %3 ], [ %15, %21 ]
+  %.01 = phi i32 [ %2, %3 ], [ %12, %21 ]
   %7 = icmp sgt i32 %.01, 5
   br i1 %7, label %8, label %9
 
@@ -19,27 +19,27 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
 
 9:                                                ; preds = %6
   %10 = sub nsw i32 %4, 1
-  br label %11
+  %11 = add nsw i32 %1, 1
+  %12 = add nsw i32 %.01, 1
+  br label %13
 
-11:                                               ; preds = %18, %9
+13:                                               ; preds = %18, %9
   %.0 = phi i32 [ %10, %9 ], [ %17, %18 ]
-  %12 = add nsw i32 %1, 1
-  %13 = icmp sgt i32 %.0, 5
-  br i1 %13, label %14, label %16
+  %14 = icmp sgt i32 %.0, 5
+  br i1 %14, label %15, label %16
 
-14:                                               ; preds = %11
-  %15 = add nsw i32 %.01, 1
+15:                                               ; preds = %13
   br label %20
 
-16:                                               ; preds = %11
+16:                                               ; preds = %13
   %17 = add nsw i32 %.0, 1
   br label %18
 
 18:                                               ; preds = %16
   %19 = add nsw i32 %17, 5
-  br label %11, !llvm.loop !6
+  br label %13, !llvm.loop !6
 
-20:                                               ; preds = %14
+20:                                               ; preds = %15
   br label %21
 
 21:                                               ; preds = %20

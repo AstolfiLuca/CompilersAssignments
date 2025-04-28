@@ -116,9 +116,10 @@ bool hasDependencies(SetVector<Instruction*> movable, Loop &L, Instruction &I) {
 PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &AM) {
   LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
-  SmallVector<BasicBlock*> exitBB;      // Uscite del loop
 
-  for (Loop *L : LI) {
+  // Return all of the loops in the function in preorder across the loop nests, with siblings in forward program order. 
+  for (Loop *L : LI.getLoopsInPreorder()) {  // Itera su tutti i loop (anche innestati)
+    SmallVector<BasicBlock*> exitBB;    // Uscite del loop
     SetVector<BasicBlock*> stack;       // Pila dei blocchi da visitare
     SetVector<BasicBlock*> visited;     // Pila che memorizza i blocchi già visitati
     SetVector<Instruction*> invariants; // Istruzioni loop invariant
@@ -127,37 +128,39 @@ PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &A
     // Inizializza le pile con il blocco header del loop
     visited.insert(L->getHeader()); 
     stack.insert(L->getHeader()); 
-    outs() << "Loop header: " << *L->getHeader() << "\n";
 
     // Inizializza le uscite del loop nel vettore exitBB
     L->getExitBlocks(exitBB);
 
+    outs() << "Visiting Loop: ";
     // Depth First Search dei blocchi del Loop
     while (stack.size() > 0) {
       BasicBlock* BB = stack.pop_back_val();
+      BB->printAsOperand(errs(), false); // Stampa il blocco corrente
+      outs() << " | ";
       
       // Aggiorno il vettore delle istruzioni loop invariant
       for (Instruction &I : *BB){ 
-      if (isLoopInvariant(invariants, *L, I))
-        invariants.insert(&I); // Se l'istruzione è loop invariant, la inserisco nell'insieme
+        if (isLoopInvariant(invariants, *L, I))
+          invariants.insert(&I); // Se l'istruzione è loop invariant, la inserisco nell'insieme
       }
         
       // Se l'istruzione è loop invariant e posso fare code motion, allora la inserisco nell'apposito vettore
       for (Instruction* I : invariants) {
-      if (isMovable(movable, *L, *I, DT)) 
-        movable.insert(I); 
+        if (isMovable(movable, *L, *I, DT)) 
+          movable.insert(I); 
       }
     
       // Se il blocco corrente è un'uscita del loop (quindi è contenuto in exitBB), allora non aggiungo i successori alla pila
       if (is_contained(exitBB, BB))  
-      continue;
+        continue;
 
       // Aggiungo i successori del blocco corrente alla pila
       for (BasicBlock* bb : successors(BB)) {
-      if (!visited.contains(bb)){
-        stack.insert(bb);
-        visited.insert(BB);
-      }
+        if (!visited.contains(bb)){
+          stack.insert(bb);
+          visited.insert(BB);
+        }
       }
     }
 
@@ -174,14 +177,12 @@ PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &A
       I.moveBefore(L->getLoopPreheader()->getTerminator()); // Sposta l'istruzione alla fine del preheader
       movable.remove(&I); // Rimuovo l'istruzione dalla lista delle istruzioni da spostare e aggiorno l'iteratore
     }
-
-    // Stampa i blocchi in visited con print as operand per la stampa della label
-    outs() << "Visited blocks:\n";
-    for (BasicBlock* BB : visited) {
-      BB->printAsOperand(outs(), false);
-      outs() << "\n";
-    }
+    outs() << "\n";
   }
+  
+  outs() << "\n";
+  for (Loop *L : LI.getLoopsInPreorder()) 
+    outs() << "Loop Preheader: " << *L->getLoopPreheader() << "\n";
   
   return PreservedAnalyses::all();
 }
