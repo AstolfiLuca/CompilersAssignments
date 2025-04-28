@@ -5,11 +5,11 @@ int fun(int a, int b, int c){
 
     int z = 1;
 
-    while(z == 1){
+    while(true){
         if(i<5)
             a = b + c;
         else{
-            e = b+1;
+            e = b + 1;
             break;
         }
         d = a + 1;
@@ -17,6 +17,7 @@ int fun(int a, int b, int c){
     }
 
     c = a;
+    d = e;
 
     return c;
     
