@@ -5,11 +5,8 @@
 
 using namespace llvm;
 
-// Algebraic Identity
-bool runOnBasicBlockOpt1(BasicBlock &BB);
-bool runOnFunctionOpt1(Function &F);
-
-struct LoopInvariantPass : PassInfoMixin<LoopInvariantPass> {
+// LICM
+struct LoopInvariantCodeMotionPass : PassInfoMixin<LoopInvariantCodeMotionPass> {
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &);
   static bool isRequired() { return true; }
 };

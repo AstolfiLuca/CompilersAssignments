@@ -120,7 +120,7 @@ bool hasDependencies(SetVector<Instruction*> moved, Loop &L, Instruction &I) {
   return false; // Se non trovo dipendenze non moved, posso fare la code motion
 }
 
-PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &AM) {
+PreservedAnalyses LoopInvariantCodeMotionPass::run(Function &F, FunctionAnalysisManager &AM) {
   LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
 

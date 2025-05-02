@@ -2,7 +2,7 @@
 
 bool add_passes(StringRef Name, FunctionPassManager &FPM){
   if (Name == "li") {
-    FPM.addPass(LoopInvariantPass());
+    FPM.addPass(LoopInvariantCodeMotionPass());
     return true;
   }
 

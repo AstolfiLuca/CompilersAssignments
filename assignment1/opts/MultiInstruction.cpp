@@ -67,9 +67,9 @@ bool runOnBasicBlockOpt3(BasicBlock &BB) {
       
       if(isOptimizableOpt3(Inst.getOpcode(), Used->getOpcode(), instNumber, usedNumber, isFirstInstOpNumber, isFirstUsedOpNumber)) 
         Inst.replaceAllUsesWith(replaceRegister);
-
     } 
   } 
+
   return true;
 }
 
