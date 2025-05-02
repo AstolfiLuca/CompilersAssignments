@@ -5,28 +5,26 @@ int fun(int a, int b, int c){
     int z;
 
     while(true){
-        d = a + b; // loop invariant (si code motion)
+        d = a + b; // code motion
         if(c > 5){
-            e = d + 1; // loop invariant (si code motion)
+            e = d + 1; // non considerato (exit block)
             break;
         }
-        else {
-            e = c - 1;  // loop invariant (no code motion)
+        else
+            e = d - 1;  // code motion 
+    }
 
-            while(true){
-                f = b + 1; // loop invariant (si code motion)
-                 
-                if(e > 5){
-                    c = b + 1;  // si loop invariant (si code motion)
-                    break;
-                }
-                else
-                    c = b - 1; // no loop invariant
-                
-                z = e + 5; // no loop invariant
-                
-            }
+    while(true){
+        f = b + 1; // code motion
+         
+        if(e > 5){
+            c++;  // non considerato (exit block)
+            break;
         }
+        else
+            e++; // no loop invariant (usa un PHINode)
+        
+        z = e + 5; // no loop invariant (usa un PHINode)
     }
     
     return e;

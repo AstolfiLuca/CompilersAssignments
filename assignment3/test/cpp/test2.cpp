@@ -7,12 +7,12 @@ int fun(int a, int b, int c){
 
     while(true){
         if(i<5)
-            a = b + c;
+            a = b + c; // more reaching definitions
         else{
             e = b + 1;
             break;
         }
-        d = a + 1;
+        d = a + 1; // a not momoved, so d not movable
         i++;
     }
 

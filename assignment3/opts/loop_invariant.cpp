@@ -36,18 +36,15 @@ ALGORITMO:
 
 // Funzione per controllare se un'istruzione è loop invariant
 bool isLoopInvariant(SetVector<Instruction*> invariants, Loop &L, Instruction &Inst) {
-  if (!Inst.isBinaryOp()) // Non possono essere loop invariant i PHINode
-    return false; 
-
   for (Value* op : Inst.operands()) { 
     // Sono loop invariant gli operandi costanti o argomenti di funzione
     if (isa<Constant>(op) || isa<Argument>(op)) 
       continue;
     
     // L'operando è loop invariant se la sua definizione è esterna la loop,
-    // oppure se dentro al loop ed è loop invariant 
+    // oppure se dentro al loop, non è un PHINode ed è loop invariant 
     if (Instruction* I = dyn_cast<Instruction>(op)) { 
-      if (!L.contains(I) || invariants.contains(I)) 
+      if (!L.contains(I) || (!isa<PHINode>(I) && invariants.contains(I))) 
         continue;
     }
      
@@ -57,10 +54,12 @@ bool isLoopInvariant(SetVector<Instruction*> invariants, Loop &L, Instruction &I
   return true;
 }
 
-// Funzione per eseguire il code motion
+// Funzione per eseguire la code motion
 bool isMovable(DominatorTree &DT, Loop &L, Instruction &I) {
   SmallVector<BasicBlock*> exitBB; 
-  L.getExitBlocks(exitBB); //uscite del loop
+  L.getExitBlocks(exitBB); // Uscite del loop
+  
+  outs() << " - Istruzione: " << I << " -> ";
 
   // ---------- Controllo "Dominanza delle uscite" ---------- 
   bool domExit;
@@ -77,8 +76,10 @@ bool isMovable(DominatorTree &DT, Loop &L, Instruction &I) {
     for(Use &U : I.uses()){
       if (Instruction* user = dyn_cast<Instruction>(U.getUser())){ 
         // Se l'uso è al di fuori del loop, l'istruzione è alive
-        if (!L.contains(user)) 
+        if (!L.contains(user)){
+          outs() << "domExit: " << domExit << "\n";
           return false;
+        }
       }
     }
   }
@@ -86,15 +87,20 @@ bool isMovable(DominatorTree &DT, Loop &L, Instruction &I) {
   for (Use &U : I.uses()){  
     // Se l'istruzione usata ha più di una definizione interna al loop, non posso fare la code motion
     if (PHINode* phi = dyn_cast<PHINode>(U.getUser())){
-      if (L.contains(phi))
+      if (L.contains(phi)){
+        outs() << "more reaching definintions \n";
         return false; // Se trovo un PHI node nel loop, allora sto usando una variabile per cui ho altre definizioni
+      }
     }
 
     // Per fare la code motion, il blocco dell'istruzione deve dominare ogni suo uso
-    if(!DT.dominates(I.getParent(), U))
+    if(!DT.dominates(I.getParent(), U)){
+      outs() << "don't dominate all uses \n";
       return false; // Se trovo un uso non dominato dal blocco dell'istruzione, non posso fare la code motion
+    }
   }
 
+  outs() << " is movable \n";
   return true; // Se tutte le condizioni sono soddisfatte, posso fare code motion
 }
 
@@ -137,12 +143,13 @@ PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &A
         if (isLoopInvariant(invariants, *L, I))
           invariants.insert(&I); // Se l'istruzione è loop invariant, la inserisco nell'insieme
       }
-        
-      // Se l'istruzione è loop invariant e posso fare code motion, allora la inserisco nell'apposito vettore
-      for (Instruction* I : invariants) {
-        if (isMovable(DT, *L, *I)) 
-          movable.insert(I); 
-      }
+    }
+
+    // Se l'istruzione è loop invariant e posso fare code motion, allora la inserisco nell'apposito vettore
+    outs() << "\n";
+    for (Instruction* I : invariants) {
+      if (isMovable(DT, *L, *I)) 
+        movable.insert(I); 
     }
 
     outs() << "\n" << "Istruzioni loop invariant: \n";
