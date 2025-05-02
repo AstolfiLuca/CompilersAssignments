@@ -4,34 +4,35 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:
 target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline nounwind uwtable
-define dso_local noundef i32 @_Z1fiiiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3, i32 noundef %4, i32 noundef %5) #0 {
+define dso_local noundef i32 @_Z3fooiiiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3, i32 noundef %4, i32 noundef %5) #0 {
   %7 = add nsw i32 5, %5
   %8 = add nsw i32 %7, %1
-  %9 = add nsw i32 %8, 1
-  br label %10
+  %9 = add nsw i32 %8, 4
+  %10 = add nsw i32 %8, 1
+  %11 = add nsw i32 %9, 2
+  br label %12
 
-10:                                               ; preds = %16, %6
-  %.01 = phi i32 [ %4, %6 ], [ %18, %16 ]
-  %11 = icmp slt i32 %.01, 5
-  br i1 %11, label %12, label %19
-
-12:                                               ; preds = %10
-  %13 = icmp slt i32 %.01, 3
-  br i1 %13, label %14, label %15
+12:                                               ; preds = %19, %6
+  %.0 = phi i32 [ %4, %6 ], [ %20, %19 ]
+  %13 = icmp slt i32 %.0, 5
+  br i1 %13, label %14, label %21
 
 14:                                               ; preds = %12
-  br label %16
+  %15 = icmp slt i32 %.0, 3
+  br i1 %15, label %16, label %18
 
-15:                                               ; preds = %12
-  br label %16
+16:                                               ; preds = %14
+  %17 = add nsw i32 %7, 3
+  br label %21
 
-16:                                               ; preds = %15, %14
-  %.0 = phi i32 [ 2, %14 ], [ 3, %15 ]
-  %17 = add nsw i32 %.0, 2
-  %18 = add nsw i32 %.01, 1
-  br label %10, !llvm.loop !6
+18:                                               ; preds = %14
+  br label %19
 
-19:                                               ; preds = %10
+19:                                               ; preds = %18
+  %20 = add nsw i32 %.0, 1
+  br label %12, !llvm.loop !6
+
+21:                                               ; preds = %16, %12
   ret i32 %1
 }
 

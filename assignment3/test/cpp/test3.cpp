@@ -11,17 +11,17 @@ int fun(int a, int b, int c){
             break;
         }
         else {
-            e = d - 1;  // loop invariant (no code motion)
-            
+            e = c - 1;  // loop invariant (no code motion)
+
             while(true){
                 f = b + 1; // loop invariant (si code motion)
                  
                 if(e > 5){
-                    c++;  // si loop invariant (si code motion)
+                    c = b + 1;  // si loop invariant (si code motion)
                     break;
                 }
                 else
-                    e++; // no loop invariant
+                    c = b - 1; // no loop invariant
                 
                 z = e + 5; // no loop invariant
                 

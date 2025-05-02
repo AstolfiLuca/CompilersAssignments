@@ -36,17 +36,18 @@ ALGORITMO:
 
 // Funzione per controllare se un'istruzione è loop invariant
 bool isLoopInvariant(SetVector<Instruction*> invariants, Loop &L, Instruction &Inst) {
-  if (!Inst.isBinaryOp()) 
+  if (!Inst.isBinaryOp()) // Non possono essere loop invariant i PHINode
     return false; 
 
   for (Value* op : Inst.operands()) { 
-    if (isa<Constant>(op) || isa<Argument>(op)) // Operando costante o argomento di funzione sono loop invariant
+    // Sono loop invariant gli operandi costanti o argomenti di funzione
+    if (isa<Constant>(op) || isa<Argument>(op)) 
       continue;
     
+    // L'operando è loop invariant se la sua definizione è esterna la loop,
+    // oppure se dentro al loop ed è loop invariant 
     if (Instruction* I = dyn_cast<Instruction>(op)) { 
-      if (!L.contains(I)) // Se la definizione dell'operando è esterna al loop, è loop invariant
-        continue;
-      else if (!isa<PHINode>(I) && invariants.contains(I)) // Se è già loop-invariant e non è un PHINode (ha una sola reaching definition)
+      if (!L.contains(I) || invariants.contains(I)) 
         continue;
     }
      
@@ -57,7 +58,7 @@ bool isLoopInvariant(SetVector<Instruction*> invariants, Loop &L, Instruction &I
 }
 
 // Funzione per eseguire il code motion
-bool isMovable(SetVector<Instruction*> movable, Loop &L, Instruction &I, DominatorTree &DT) {
+bool isMovable(DominatorTree &DT, Loop &L, Instruction &I) {
   SmallVector<BasicBlock*> exitBB; 
   L.getExitBlocks(exitBB); //uscite del loop
 
@@ -83,34 +84,34 @@ bool isMovable(SetVector<Instruction*> movable, Loop &L, Instruction &I, Dominat
   }
   
   for (Use &U : I.uses()){  
-    // Se l'istruzione sta modificando una variabile interna al loop, non posso fare la code motion
+    // Se l'istruzione usata ha più di una definizione interna al loop, non posso fare la code motion
     if (PHINode* phi = dyn_cast<PHINode>(U.getUser())){
       if (L.contains(phi))
-        return false; // Se trovo un PHI node, allora sto usando una variabile per cui ho altre definizioni
+        return false; // Se trovo un PHI node nel loop, allora sto usando una variabile per cui ho altre definizioni
     }
 
-    // Se trovo un uso non dominato dal blocco dell'istruzione, non posso fare la code motion
+    // Per fare la code motion, il blocco dell'istruzione deve dominare ogni suo uso
     if(!DT.dominates(I.getParent(), U))
-      return false;
+      return false; // Se trovo un uso non dominato dal blocco dell'istruzione, non posso fare la code motion
   }
 
   return true; // Se tutte le condizioni sono soddisfatte, posso fare code motion
 }
 
-// Funzione per controllare se l'istruzione ha dipendenze non movable
-// Se l'istruzione ha dipendenze non movable, non posso fare code motion
-bool hasDependencies(SetVector<Instruction*> movable, Loop &L, Instruction &I) {
+// Funzione per controllare se l'istruzione ha dipendenze non moved (caso in cui non posso fare code motion)
+bool hasDependencies(SetVector<Instruction*> moved, Loop &L, Instruction &I) {
   for (Value* op : I.operands()) {
     if (isa<Constant>(op) || isa<Argument>(op)) // Se un operando è costante o argomento di funzione, allora non è una dipendenza
       continue;
 
-    //Se la definizione dell'operando è nel loop e non è in movable, allora non posso fare code motion
+    //Se la definizione dell'operando è nel loop e non è stato spostato, allora non posso fare code motion
     if (Instruction* opInst = dyn_cast<Instruction>(op)) {
-      if (!movable.contains(opInst) && L.contains(opInst))
+      if (L.contains(opInst) && !moved.contains(opInst))
         return true; 
     }
   }
-  return false;
+
+  return false; // Se non trovo dipendenze non moved, posso fare la code motion
 }
 
 PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &AM) {
@@ -118,27 +119,19 @@ PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &A
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
 
   // Return all of the loops in the function in preorder across the loop nests, with siblings in forward program order. 
-  for (Loop *L : LI.getLoopsInPreorder()) {  // Itera su tutti i loop (anche innestati)
-    SmallVector<BasicBlock*> exitBB;    // Uscite del loop
-    SetVector<BasicBlock*> stack;       // Pila dei blocchi da visitare
-    SetVector<BasicBlock*> visited;     // Pila che memorizza i blocchi già visitati
-    SetVector<Instruction*> invariants; // Istruzioni loop invariant
-    SetVector<Instruction*> movable;    // Istruzioni candidate alla code motion
-    
-    // Inizializza le pile con il blocco header del loop
-    visited.insert(L->getHeader()); 
-    stack.insert(L->getHeader()); 
+  for (Loop *L : LI.getLoopsInPreorder()) {   
+    SetVector<Instruction*> invariants;       // Istruzioni loop invariant
+    SetVector<Instruction*> movable;          // Istruzioni candidate alla code motion
+    SetVector<Instruction*> moved;            // Istruzioni spostate
+    SmallVector<BasicBlock*> exitBB;          // Uscite del loop (blocchi già fuori dal Loop)
+    L->getExitBlocks(exitBB);                 // Metodo per ottenere le uscite del Loop
 
-    // Inizializza le uscite del loop nel vettore exitBB
-    L->getExitBlocks(exitBB);
-
-    outs() << "Visiting Loop: ";
-    // Depth First Search dei blocchi del Loop
-    while (stack.size() > 0) {
-      BasicBlock* BB = stack.pop_back_val();
+    // Iteriamo sui blocchi del Loop (è di default una Depth First Search)
+    outs() << "Loop: ";
+    for (BasicBlock* BB : L->blocks()) {
       BB->printAsOperand(errs(), false); // Stampa il blocco corrente
       outs() << " | ";
-      
+
       // Aggiorno il vettore delle istruzioni loop invariant
       for (Instruction &I : *BB){ 
         if (isLoopInvariant(invariants, *L, I))
@@ -147,42 +140,35 @@ PreservedAnalyses LoopInvariantPass::run(Function &F, FunctionAnalysisManager &A
         
       // Se l'istruzione è loop invariant e posso fare code motion, allora la inserisco nell'apposito vettore
       for (Instruction* I : invariants) {
-        if (isMovable(movable, *L, *I, DT)) 
+        if (isMovable(DT, *L, *I)) 
           movable.insert(I); 
       }
-    
-      // Se il blocco corrente è un'uscita del loop (quindi è contenuto in exitBB), allora non aggiungo i successori alla pila
-      if (is_contained(exitBB, BB))  
-        continue;
+    }
 
-      // Aggiungo i successori del blocco corrente alla pila
-      for (BasicBlock* bb : successors(BB)) {
-        if (!visited.contains(bb)){
-          stack.insert(bb);
-          visited.insert(BB);
-        }
+    outs() << "\n" << "Istruzioni loop invariant: \n";
+    for (Instruction* I : invariants) 
+      outs() << "  --- " << *I << "\n";
+    
+    outs () << "Istruzioni movable: \n";
+    for (Instruction* I : movable) 
+      outs() << "  --- " << *I << "\n";
+
+    // Per ogni istruzione movable, se non ha dipendenze non moved allora faccio la code motion
+    for (Instruction *I : movable) {
+      if (!hasDependencies(moved, *L, *I)){
+        I->moveBefore(L->getLoopPreheader()->getTerminator());  // Sposta l'istruzione alla fine del preheader
+        moved.insert(I);                                        // Aggiungo l'istruzione spostata al vettore
       }
     }
 
-    // Per ogni istruzione candidata alla code motion, controllo le sue dipendenze ed eventualmente le sposto
-    for (auto it = movable.begin(), end = movable.end(); it != end; ) {
-      Instruction &I = **it++;
-
-      // Se l'istruzione ha dipendenze non movable, non posso fare code motion
-      if (hasDependencies(movable, *L, I)) 
-      continue;
-
-      // Se l'istruzione è loop invariant, posso fare code motion e non ha dipendenze 
-      // allora effettuo lo spostamento dell'istruzione (e la rimuovo dal vettore)
-      I.moveBefore(L->getLoopPreheader()->getTerminator()); // Sposta l'istruzione alla fine del preheader
-      movable.remove(&I); // Rimuovo l'istruzione dalla lista delle istruzioni da spostare e aggiorno l'iteratore
+    outs() << "Istruzioni spostate: \n";
+    for (Instruction* I : moved) {
+      outs() << "  --- " << *I << "\n";
     }
-    outs() << "\n";
+
+    outs() << "\n Funzione aggiornata: \n";
+    F.print(outs()); // Stampa la funzione aggiornata
   }
-  
-  outs() << "\n";
-  for (Loop *L : LI.getLoopsInPreorder()) 
-    outs() << "Loop Preheader: " << *L->getLoopPreheader() << "\n";
-  
+
   return PreservedAnalyses::all();
 }

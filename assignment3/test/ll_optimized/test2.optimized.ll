@@ -5,28 +5,28 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline nounwind uwtable
 define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
-  %4 = add nsw i32 %1, 1
-  br label %5
+  br label %4
 
-5:                                                ; preds = %10, %3
+4:                                                ; preds = %10, %3
   %.01 = phi i32 [ 0, %3 ], [ %12, %10 ]
-  %.0 = phi i32 [ %0, %3 ], [ %8, %10 ]
-  %6 = icmp slt i32 %.01, 5
-  br i1 %6, label %7, label %9
+  %.0 = phi i32 [ %0, %3 ], [ %7, %10 ]
+  %5 = icmp slt i32 %.01, 5
+  br i1 %5, label %6, label %8
 
-7:                                                ; preds = %5
-  %8 = add nsw i32 %1, %2
+6:                                                ; preds = %4
+  %7 = add nsw i32 %1, %2
   br label %10
 
-9:                                                ; preds = %5
+8:                                                ; preds = %4
+  %9 = add nsw i32 %1, 1
   br label %13
 
-10:                                               ; preds = %7
-  %11 = add nsw i32 %8, 1
+10:                                               ; preds = %6
+  %11 = add nsw i32 %7, 1
   %12 = add nsw i32 %.01, 1
-  br label %5, !llvm.loop !6
+  br label %4, !llvm.loop !6
 
-13:                                               ; preds = %9
+13:                                               ; preds = %8
   ret i32 %.0
 }
 

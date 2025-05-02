@@ -4,34 +4,35 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:
 target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline nounwind uwtable
-define dso_local noundef i32 @_Z1fiiiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3, i32 noundef %4, i32 noundef %5) #0 {
+define dso_local noundef i32 @_Z3fooiiiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3, i32 noundef %4, i32 noundef %5) #0 {
   %7 = add nsw i32 5, %5
   br label %8
 
-8:                                                ; preds = %15, %6
-  %.01 = phi i32 [ %4, %6 ], [ %18, %15 ]
-  %9 = icmp slt i32 %.01, 5
-  br i1 %9, label %10, label %19
+8:                                                ; preds = %17, %6
+  %.0 = phi i32 [ %4, %6 ], [ %20, %17 ]
+  %9 = icmp slt i32 %.0, 5
+  br i1 %9, label %10, label %21
 
 10:                                               ; preds = %8
   %11 = add nsw i32 %7, %1
-  %12 = icmp slt i32 %.01, 3
-  br i1 %12, label %13, label %14
+  %12 = icmp slt i32 %.0, 3
+  br i1 %12, label %13, label %15
 
 13:                                               ; preds = %10
-  br label %15
+  %14 = add nsw i32 %7, 3
+  br label %21
 
-14:                                               ; preds = %10
-  br label %15
+15:                                               ; preds = %10
+  %16 = add nsw i32 %11, 4
+  br label %17
 
-15:                                               ; preds = %14, %13
-  %.0 = phi i32 [ 2, %13 ], [ 3, %14 ]
-  %16 = add nsw i32 %11, 1
-  %17 = add nsw i32 %.0, 2
-  %18 = add nsw i32 %.01, 1
+17:                                               ; preds = %15
+  %18 = add nsw i32 %11, 1
+  %19 = add nsw i32 %16, 2
+  %20 = add nsw i32 %.0, 1
   br label %8, !llvm.loop !6
 
-19:                                               ; preds = %8
+21:                                               ; preds = %13, %8
   ret i32 %1
 }
 
