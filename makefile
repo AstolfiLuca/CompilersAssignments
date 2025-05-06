@@ -39,9 +39,12 @@ clang:
 	rm bc/$(test)_mem.bc
 
 # Create the test (.ll) optimization (.optimized.ll) 
+# dce active by default, if you want to disable it, set dce=0
+comma := ,
+
 optimize:
 	cd assignment$(assignment)/test && \
-	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p) ll/$(test).ll -o bc/$(test).optimized.bc && \
+	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p)$(if $(filter 0,$(dce)),,$(comma)dce) ll/$(test).ll -o bc/$(test).optimized.bc && \
 	llvm-dis bc/$(test).optimized.bc -o ll_optimized/$(test).optimized.ll
 
 clean_builds:

@@ -124,15 +124,15 @@ PreservedAnalyses LoopInvariantCodeMotionPass::run(Function &F, FunctionAnalysis
   LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
 
-  // Return all of the loops in the function in preorder across the loop nests, with siblings in forward program order. 
-  for (Loop *L : LI.getLoopsInPreorder()) {   
+  // Cicla sui loop (solo quelli esterni)
+  for (Loop *L : LI) {   
     SetVector<Instruction*> invariants;       // Istruzioni loop invariant
     SetVector<Instruction*> movable;          // Istruzioni candidate alla code motion
     SetVector<Instruction*> moved;            // Istruzioni spostate
     SmallVector<BasicBlock*> exitBB;          // Uscite del loop (blocchi già fuori dal Loop)
     L->getExitBlocks(exitBB);                 // Metodo per ottenere le uscite del Loop
 
-    // Iteriamo sui blocchi del Loop (è di default una Depth First Search)
+    // Iteriamo sui blocchi del Loop (è di default una Depth First Search, dal blocco che domina tutto fino al blocco che non domina nu)
     outs() << "Loop: ";
     for (BasicBlock* BB : L->blocks()) {
       BB->printAsOperand(errs(), false); // Stampa il blocco corrente
