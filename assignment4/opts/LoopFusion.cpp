@@ -8,6 +8,7 @@
 #include <llvm/Analysis/LoopInfo.h>
 #include "llvm/IR/Dominators.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/Analysis/PostDominators.h"
 
 bool isAdjacentLoops(Loop *L1, Loop *L2){
   outs() << "\nProcessing BasicBlock from L1: ";
@@ -43,8 +44,32 @@ bool isAdjacentLoops(Loop *L1, Loop *L2){
   return false;
 }
 
+bool isControlFlowEquivalence(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT) {
+  bool dominance = DT.dominates(L1->getHeader(), L2->getHeader());
+  if(dominance){
+    outs() << "\nL1 dominates L2\n";
+  }
+  else{
+    outs() << "\nL1 does not dominate L2\n";
+    return false;
+  }
+
+  bool postDominance = PDT.dominates(L2->getHeader(), L1->getHeader());
+  if(postDominance){
+    outs() << "\nL2 post dominates L1\n";
+  }
+  else{
+    outs() << "\nL2 does not post dominate L1\n";
+    return false;
+  }
+
+  return true;
+}
+
 PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) {
   LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
+  DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
+  PostDominatorTree &PDT = AM.getResult<PostDominatorTreeAnalysis>(F);
   
   for (auto it = LI.rbegin(); it != LI.rend(); ++it) {
     Loop *L1 = *it;
@@ -59,6 +84,9 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
 
     bool isA = isAdjacentLoops(L1, L2);
     outs() << " Loop adjacet: " << isA << "\n";
+
+    //bool isCFE = isControlFlowEquivalence(L1, L2, DT, PDT);
+    //outs() << " Control flow equivalence: " << isCFE << "\n";
 
     // Process L1 and L2
   }

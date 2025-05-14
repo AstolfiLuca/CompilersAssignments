@@ -1,11 +1,9 @@
 int foo(int a, int b, int c){
-    int n=5;
-    int i = 0;
-    if (n > 0) {
-        do {
-          // Loop body
-          i += 1;
-        } while (i < n);
+    for(int i=0; i<c; i++){
+        a += i;
+        if(a > 10){
+            return a+b;
+        }
     }
     int z = 0;
     do{
