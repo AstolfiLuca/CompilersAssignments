@@ -7,11 +7,10 @@ int foo(int a, int b, int c){
           i += 1;
         } while (i < n);
     }
-    int z = 0;
     do{
         b += z;
         z++;
-    }while(z < c);
-    return a+b*z;
+    } while(z < c);
 
+    return a+b*c;
 }

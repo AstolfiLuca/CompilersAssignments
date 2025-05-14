@@ -49,8 +49,6 @@ bool isControlFlowEquivalence(Loop *L1, Loop *L2, DominatorTree &DT, PostDominat
 
 PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) {
   LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
-  DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
-  PostDominatorTree &PDT = AM.getResult<PostDominatorTreeAnalysis>(F);
   
   for (auto it = LI.rbegin(); it != LI.rend(); ++it) {
     Loop *L1 = *it;
@@ -65,9 +63,6 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
 
     bool isA = isAdjacentLoops(L1, L2);
     outs() << " Loop adjacet: " << isA << "\n";
-
-    //bool isCFE = isControlFlowEquivalence(L1, L2, DT, PDT);
-    //outs() << " Control flow equivalence: " << isCFE << "\n";
 
     // Process L1 and L2
   }
