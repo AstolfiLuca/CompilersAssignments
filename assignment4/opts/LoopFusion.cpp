@@ -36,11 +36,6 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
   for (auto L1 = LI.rbegin(), L2 = std::next(L1); L2 != LI.rend(); ++L1, ++L2) {
     bool isA = isAdjacentLoops(*L1, *L2); // Dereferenzia gli iteratori per ottenere Loop*
     outs() << "-> Loop " << loop_counter << " adjacent: " << isA << "\n";
-
-
-
-
-    
     loop_counter++;
   }
   

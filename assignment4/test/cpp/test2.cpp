@@ -1,14 +1,15 @@
-int foo(int a, int b, int c){
+int foo(int a, int b, int c, int z, int n){
     int i=0; 
-    while(i<c){
-        a += i;
-        i++;
+    if (n > 0) {
+        do {
+            // Loop body
+            i += 1;
+        } while (i < n);
     }
-    int z = 0;
     do{
         b += z;
         z++;
-    }while(z < c);
-    return a+b*z;
+    } while(z < c);
 
+    return a+b*c;
 }
