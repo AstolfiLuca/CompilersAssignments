@@ -10,6 +10,8 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/PostDominators.h"
 
+int loop_counter = 1;
+
 bool isAdjacentLoops(Loop *L1, Loop *L2){
   BasicBlock *exitBlockL1 = L1->getExitBlock();
   if (L1->isGuarded()) {
@@ -49,22 +51,13 @@ bool isControlFlowEquivalence(Loop *L1, Loop *L2, DominatorTree &DT, PostDominat
 
 PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) {
   LoopInfo &LI = AM.getResult<LoopAnalysis>(F);
-  
-  for (auto it = LI.rbegin(); it != LI.rend(); ++it) {
-    Loop *L1 = *it;
-    auto nextIt = std::next(it);
-    if (nextIt == LI.rend()){
-      outs() << "No more loops to process.\n";
-      break;
-    }
 
-    Loop *L2 = *nextIt;
-    outs() << "Processing loops: ";
-
-    bool isA = isAdjacentLoops(L1, L2);
-    outs() << " Loop adjacet: " << isA << "\n";
-
-    // Process L1 and L2
+  // L1 è il loop attualmente analizzato, L2 è il loop successivo a L1
+  // I loop vengono visitati al contrario
+  for (auto L1 = LI.rbegin(), L2 = std::next(L1); L2 != LI.rend(); ++L1, ++L2) {
+    bool isA = isAdjacentLoops(*L1, *L2); // Dereferenzia gli iteratori per ottenere Loop*
+    outs() << "-> Loop " << loop_counter << " adjacent: " << isA << "\n";
+    loop_counter++;
   }
   
   return PreservedAnalyses::all();
