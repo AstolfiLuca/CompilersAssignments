@@ -1,15 +1,13 @@
-int foo(int a, int b, int c){
-    for(int i=0; i<c; i++){
-        a += i;
-        if(a > 10){
-            return a+b;
-        }
-    }
-    int z = 0;
+// Due loop non guarded
+int foo(int a, int b, int c, int z){
+    int n=z;
+    int i = 0;
+    do {
+        i += 1;
+    } while (i < n);
     do{
         b += z;
-        z++;
-    }while(z < c);
-    return a+b*z;
+    } while(i < n);
 
+    return a+b*c;
 }

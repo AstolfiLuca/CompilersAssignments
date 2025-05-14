@@ -1,16 +1,17 @@
-int foo(int a, int b, int c){
-    int n=5;
+// Due loop guarded
+int foo(int a, int b, int c, int z){
+    int n=z;
     int i = 0;
     if (n > 0) {
         do {
-          // Loop body
           i += 1;
         } while (i < n);
     }
-    do{
-        b += z;
-        z++;
-    } while(z < c);
+    if (n > 0){
+        do{
+            b += z;
+        } while(i < n);
+    }
 
     return a+b*c;
 }
