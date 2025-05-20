@@ -11,7 +11,17 @@ help:
 configure_env:
 	export PATH=/usr/lib/llvm-19/bin:$$PATH
 	export LD_LIBRARY_PATH=/usr/lib/llvm-19/lib:$$LD_LIBRARY_PATH
-	export LLVM_DIR=/usr/lib/llvm-19
+	export LLVM_DIR=/usr/lib/llvm-1
+
+install_addons:
+	sudo apt install -y graphviz
+
+function_graph:
+	cd assignment$(assignment)/test/ll && \
+	opt -p dot-cfg $(test).ll -disable-output > /dev/null && \
+	DOT_FILE=$$(ls ._*.dot) && \
+	dot -T png -o ../png/$(test).png $$DOT_FILE && \
+	rm $$DOT_FILE
 
 cmake:
 	cd assignment$(assignment)/ && \
@@ -23,7 +33,8 @@ cmake:
 	mkdir -p cpp && \
 	mkdir -p bc && \
 	mkdir -p ll && \
-	mkdir -p ll_optimized
+	mkdir -p ll_optimized && \
+	mkdir -p png 
 	
 build:
 	cd assignment$(assignment)/build && \
@@ -40,6 +51,7 @@ clang:
 
 # Create the test (.ll) optimization (.optimized.ll) 
 # dce active by default, if you want to disable it, set dce=0
+dce := 1
 comma := ,
 
 optimize:
