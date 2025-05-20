@@ -50,7 +50,7 @@ clang:
 	rm bc/$(test)_mem.bc
 
 # Create the test (.ll) optimization (.optimized.ll) 
-# dce active by default, if you want to disable it, set dce=0
+# dce deactive by default, if you want to disable it, set dce=0
 dce := 1
 comma := ,
 

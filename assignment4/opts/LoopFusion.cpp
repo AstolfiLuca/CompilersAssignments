@@ -9,6 +9,7 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/DependenceAnalysis.h"
 
 using namespace llvm;
 
@@ -29,9 +30,30 @@ bool areGuardsEqual(BranchInst *G1, BranchInst *G2);
 * Non Guarded: l'exit block di L1 deve essere il preheader di L2
 **/
 bool areAdjacent(Loop &L1, Loop &L2){
-  outs() << "1) Are Adjacent Loops\n";
   return (L1.isGuarded() && getExitGuardSuccessor(L1) == L2.getLoopGuardBranch()->getParent()) || // Guarded
          (!L1.isGuarded() && L1.getExitBlock() == L2.getLoopPreheader());                         // Non Guarded
+}
+
+
+/**  ----- Punto 3 -----   
+* ! Lj and Lk must be control flow equivalent
+*
+* When Lj executes Lk also executes or when Lk executes Lj also executes 
+* NB: Punto 0 -> se L1 è guarded, L2 è guarded e viceversa
+**/
+bool isControlFlowEquivalent(Loop &L1, Loop &L2, DominatorTree &DT, PostDominatorTree &PDT) {
+  // Se sono guarded: le guardie devono essere semanticamente equivalenti, altrimenti controllo *solo* dominanza/post-dominanza
+  // !areGuardsEqual(L1.getLoopGuardBranch(), L2.getLoopGuardBranch()
+  if (L1.isGuarded() && !areGuardsEqual(L1.getLoopGuardBranch(), L2.getLoopGuardBranch())){
+    outs() << "-> le guardie non sono semanticamente uguali \n";
+    return false;
+  }
+
+  // Se sono guarded assegno il blocco della guardia, altrimenti assengo l'header
+  BasicBlock *L1_block = L1.isGuarded() ? L1.getLoopGuardBranch()->getParent() : L1.getHeader();
+  BasicBlock *L2_block = L2.isGuarded() ? L2.getLoopGuardBranch()->getParent() : L2.getHeader();
+
+  return (DT.dominates(L1_block, L2_block) && PDT.dominates(L2_block, L1_block)); // True se L1 domina L2 ed L2 postdomina L1
 }
 
 
@@ -43,34 +65,17 @@ bool areAdjacent(Loop &L1, Loop &L2){
 bool haveSameIteration(Loop &L1, Loop &L2, ScalarEvolution &SE){
   // Loop 1
   const SCEV *S1 = SE.getBackedgeTakenCount(&L1);
-  const SCEV *S2 = SE.getTripCountFromExitCount(SE.getExitCount(&L1, L1.getExitBlock()));
-  outs() << "-> BackedgeTakenCount of Loop " << loop_counter     << ": " << *S1 << "\n";
-  outs() << "-> TripCount of Loop " << loop_counter     << ": " << *S2 << "\n";
-  // Loop 2
-  S1 = SE.getBackedgeTakenCount(&L2);
-  S2 = SE.getTripCountFromExitCount(SE.getExitCount(&L2, L2.getExitBlock()));
-  outs() << "-> BackedgeTakenCount of Loop " << loop_counter+1     << ": " << *S1 << "\n";
-  outs() << "-> TripCount of Loop " << loop_counter+1     << ": " << *S2 << "\n";
-  return false;
-}
+  const SCEV *S2 = SE.getBackedgeTakenCount(&L2);
+  
+  if (isa<SCEVCouldNotCompute>(S1) || isa<SCEVCouldNotCompute>(S2)) {
+    outs() << "-> Cannot compute trip count for one or both loops.\n";
+    return false;
+  }
 
-
-/**  ----- Punto 3 -----   
-* ! Lj and Lk must be control flow equivalent
-*
-* When Lj executes Lk also executes or when Lk executes Lj also executes 
-* NB: Punto 0 -> se L1 è guarded, L2 è guarded e viceversa
-**/
-bool isControlFlowEquivalent(Loop &L1, Loop &L2, DominatorTree &DT, PostDominatorTree &PDT) {
-  outs() << "2) Control Flow Equivalence\n";
-
-  // Se un loop è guarded assegno il blocco della guardia, altrimenti assengo l'header
-  BasicBlock *L1_block = L1.isGuarded() ? L1.getLoopGuardBranch()->getParent() : L1.getHeader();
-  BasicBlock *L2_block = L2.isGuarded() ? L2.getLoopGuardBranch()->getParent() : L2.getHeader();
-
-  // Se sono guarded, le guardie devono essere semanticamente equivalenti, altrimenti controllo *solo* dominanza/post-dominanza
-  return ((L1.isGuarded() && areGuardsEqual(L1.getLoopGuardBranch(), L2.getLoopGuardBranch())) || !L1.isGuarded()) && 
-          (DT.dominates(L1_block, L2_block) && PDT.dominates(L2_block, L1_block)); // true = L1 domina L2 ed L2 postdomina L1 
+  outs() << "-> BackedgeTakenCount of Loop " << loop_counter   << ": " << *S1 << " -> " << SE.getUnsignedRangeMax(S1) << "\n";
+  outs() << "-> BackedgeTakenCount of Loop " << loop_counter+1 << ": " << *S2 << " -> " << SE.getUnsignedRangeMax(S2) << "\n";
+  
+  return (S1 == S2);
 }
 
 
@@ -80,37 +85,59 @@ bool isControlFlowEquivalent(Loop &L1, Loop &L2, DominatorTree &DT, PostDominato
 * A negative distance dependence occurs between Lj and Lk, Lj before Lk, when at iteration m from Lk uses 
 * a value that is computed by Lj at a future iteration m+n (where n > 0).
 **/
-bool haveNotNegativeDependencies(Loop &L1, Loop &L2){
+bool haveNotNegativeDependencies(Loop &L1, Loop &L2, DependenceInfo &DI) {
+  outs() << "Controllo dipendenze negative\n";
+  for(BasicBlock* BB: L1.blocks()){
+    for(Instruction &I : *BB){
+      //Controllo se l'istruzione ha un uso nel secondo loop
+      for(Use &U : I.uses()){
+        if (Instruction* user = dyn_cast<Instruction>(U.getUser())){
+          // Se l'uso è nel secondo loop, controllo se ci sono dipendenze negative
+          if (L2.contains(user)){
+            outs() << "Istruzione usata nel secondo loop: " << *user << "\n";
+            outs() << "Istruzione usante: " << I << "\n";
+            return false;
+          }
+        }
+      }
+    }
+  }
   return true;
 }
 
 
 /**  Controlla la validità della LoopFusion verificando le condizioni  **/ 
-bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE) {
+bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI) {
   // --- Punto 0 --- 
   // Ossia L1 e L2 saranno entrambi guarded oppure non guarded (mai guarded diversamente)
+  outs() << "0) Loops have the guard?\n";
   if (L1->isGuarded() == L2->isGuarded())
-    outs() << "0) Loop " << loop_counter << " and Loop " << loop_counter+1 << " are both equally guarded with guard: " << L1->isGuarded() << "\n";
+    outs() << "=> Loop " << loop_counter << " and Loop " << loop_counter+1 << " are both equally guarded with guard: " << L1->isGuarded() << "\n";
   else return false;
   
   // --- Punto 1 ---
+  outs() << "1) Are Loops Adjacent?\n";
   if (areAdjacent(*L1, *L2)) 
-    outs() << "1) Loop " << loop_counter << " is adjacent with Loop " << loop_counter+1 << "\n";
+    outs() << "=> Loop " << loop_counter << " is adjacent with Loop " << loop_counter+1 << "\n";
   else return false;
 
-  // --- Punto 2 ---
-  if(haveSameIteration(*L1, *L2, SE)) 
-    outs() << "3) Loop " << loop_counter << " trip count is equal to Loop " << loop_counter+1 << " trip count\n";
-  else return false;
-
+  
   // --- Punto 3 ---
+  outs() << "3) There is the Control Flow Equivalence?\n";
   if(isControlFlowEquivalent(*L1, *L2, DT, PDT)) 
-    outs() << "2) Loop " << loop_counter << " control flow equivalent with Loop " << loop_counter+1 << "\n";
+    outs() << "=> Loop " << loop_counter << " control flow equivalent with Loop " << loop_counter+1 << "\n";
+  else return false;
+  
+  // --- Punto 2 ---
+  outs() << "2) Trip Count Check?\n";
+  if(haveSameIteration(*L1, *L2, SE)) 
+    outs() << "=> Loop " << loop_counter << " and Loop " << loop_counter+1 << " have the same iteration count\n";
   else return false;
 
   // --- Punto 4 ---
-  if(haveNotNegativeDependencies(*L1, *L2)) 
-    outs() << "4) There aren't negative dependencies between Loop " << loop_counter << " and " << loop_counter+1 << " trip count\n";
+  outs () << "4) Do Loops have negative dependencies?\n";
+  if(haveNotNegativeDependencies(*L1, *L2, DI)) 
+    outs() << "=> Loop " << loop_counter << " and " << loop_counter+1 << " trip count have no negative dependencies \n";
   else return false;
 
   return true;
@@ -122,6 +149,7 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
   DominatorTree &DT = AM.getResult<DominatorTreeAnalysis>(F);
   PostDominatorTree &PDT = AM.getResult<PostDominatorTreeAnalysis>(F);
   ScalarEvolution &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
+  DependenceInfo &DI = AM.getResult<DependenceAnalysis>(F);
   outs() << "\n*** LoopFusionPass ***\n\n";
 
   // L1 è il loop attualmente analizzato, L2 è il loop successivo a L1
@@ -129,21 +157,20 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
   for (auto L1 = LI.rbegin(), L2 = std::next(L1); L2 != LI.rend(); ++L1, ++L2) {
     outs() << "* Checking Loop " << loop_counter << " and Loop " << loop_counter+1 << " *\n";
     
-    if(isLoopFusionValid(*L1, *L2, DT, PDT, SE)){
+    if(isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
       outs() << "Validity) Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
       // FUSE
     }
 
     loop_counter++;
+    outs() << "\n";
   }
   
   return PreservedAnalyses::all();
 }
 
 
-/*
- ** Funzioni di utilità **
-*/
+// ----- Funzioni di utilità -----
 
 // Prende il successore non loop (exit) di una guardia 
 // NB: La GuardBranch ha sempre due successori: il preheader del loop e il successore dell'exit block
@@ -151,6 +178,7 @@ BasicBlock* getExitGuardSuccessor(Loop &L) {
   BranchInst *guard = L.getLoopGuardBranch();
   return guard->getSuccessor(1) != L.getLoopPreheader() ? guard->getSuccessor(1) : guard->getSuccessor(0);
 }
+
 
 // Controlla se le due gardie sono semanticamente equivalenti
 bool areGuardsEqual(BranchInst *G1, BranchInst *G2) {
@@ -160,10 +188,8 @@ bool areGuardsEqual(BranchInst *G1, BranchInst *G2) {
   if (G1->isConditional() && G2->isConditional()) {
     auto *icmp1 = dyn_cast<ICmpInst>(G1->getCondition());
     auto *icmp2 = dyn_cast<ICmpInst>(G2->getCondition());
-    areEqual = (icmp1 && icmp2 &&                                 
-                icmp1->getPredicate() == icmp2->getPredicate() && // getPredicate() recupera l'operatore di confronto (sgt, sge, slt, sle)
-                icmp1->getOperand(0) == icmp2->getOperand(0) &&   // Se almeno una di queste condizioni è falsa, non sono equivalenti
-                icmp1->getOperand(1) == icmp2->getOperand(1));     // true se equivalenti, false altrimenti
+
+    areEqual = (icmp1 && icmp2 && icmp1->isIdenticalTo(icmp2));
   }
 
   if (areEqual) 
