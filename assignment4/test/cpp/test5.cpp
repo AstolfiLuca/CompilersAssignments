@@ -4,6 +4,7 @@ int foo(int a, int b, int N, int f){
 
     for(int i=0; i<10; i++){
         A[i] = a + b;
+        b = i;
     }
     for(int j=0; j<10; j++){
         B[j] = A[j+1] + b;

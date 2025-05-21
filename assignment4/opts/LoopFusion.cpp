@@ -75,6 +75,10 @@ bool haveSameIteration(Loop &L1, Loop &L2, ScalarEvolution &SE){
   outs() << "-> BackedgeTakenCount of Loop " << loop_counter   << ": " << *S1 << " -> " << SE.getUnsignedRangeMax(S1) << "\n";
   outs() << "-> BackedgeTakenCount of Loop " << loop_counter+1 << ": " << *S2 << " -> " << SE.getUnsignedRangeMax(S2) << "\n";
   
+  outs() << "S1: " << S1 << "\n";
+  outs() << "S2: " << S2 << "\n";
+  
+  // Il confronto funziona, ma o cambiamo oppure dobbiamo capire che registri stiamo confrontando
   return (S1 == S2);
 }
 
@@ -90,16 +94,40 @@ bool haveNotNegativeDependencies(Loop &L1, Loop &L2, DependenceInfo &DI) {
   for(BasicBlock* BB: L1.blocks()){
     for(Instruction &I : *BB){
       //Controllo se l'istruzione ha un uso nel secondo loop
-      for(Use &U : I.uses()){
-        if (Instruction* user = dyn_cast<Instruction>(U.getUser())){
-          // Se l'uso è nel secondo loop, controllo se ci sono dipendenze negative
-          if (L2.contains(user)){
-            outs() << "Istruzione usata nel secondo loop: " << *user << "\n";
-            outs() << "Istruzione usante: " << I << "\n";
-            return false;
-          }
+
+      Value *arrayPtr;
+      if (auto *gep = dyn_cast<GetElementPtrInst>(&I)) {
+        arrayPtr = gep->getPointerOperand();
+        outs() << "Istruzione GEP: " << I << " con puntatore: " << *arrayPtr << "\n";
+      }
+
+      for (auto &U : arrayPtr->uses()) {
+        if (Instruction* user = dyn_cast<Instruction>(U.getUser())) {
+          outs() << "Uso dell'array: " << *user << "\n";
         }
       }
+      
+
+      // Ci serve l'indirizzo di A
+      // Poi dobbiamo vedere se l'offset di A nel secondo loop è un phi o un add di un valore positivo
+      // Allora non c'è distanza negativa se anche nel primo loop c'è un'istruzione con un phi o un'istruzione con lo stesso valore positivo (corrispettivamente) 
+      
+
+      // Da vedere
+      // for(Use &U : I.uses()){
+      //   if (Instruction* user = dyn_cast<Instruction>(U.getUser())){
+      //     // Se l'uso è nel secondo loop, controllo se ci sono dipendenze negative
+      //     if (L2.contains(user)){
+      //       outs() << "Istruzione usante nel secondo loop: " << *user << "\n";
+      //       outs() << "Istruzione usata: " << I << "\n";
+      //       auto dep = DI.depends(user, &I, true);
+      //       if(dep){
+      //         outs() << "-> Negative distance dependency found between " << *user << " and " << I << "\n";
+      //         return false;
+      //       }
+      //     }
+      //   }
+      // }
     }
   }
   return true;
