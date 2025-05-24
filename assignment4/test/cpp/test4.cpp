@@ -1,11 +1,11 @@
 int fun(int a, int b, int n){
-    for(int j=0; j < n; j++){
+    for(int j=0; j < b; j++){
         a += b;
     }
     for(int i = 0; i < b; i++){
         a += b;
     }
-    for(int k=0; k < 10 ; k++){
+    for(int k=0; k < n; k++){
         a += b;
     }
     return a + b;

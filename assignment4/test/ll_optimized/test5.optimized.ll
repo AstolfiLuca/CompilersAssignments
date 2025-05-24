@@ -10,48 +10,46 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
   br label %7
 
 7:                                                ; preds = %13, %4
-  %.02 = phi i32 [ 0, %4 ], [ %14, %13 ]
-  %.01 = phi i32 [ %1, %4 ], [ %.02, %13 ]
-  %8 = icmp slt i32 %.02, 10
+  %.01 = phi i32 [ 0, %4 ], [ %14, %13 ]
+  %8 = icmp slt i32 %.01, 10
   br i1 %8, label %9, label %15
 
 9:                                                ; preds = %7
-  %10 = add nsw i32 %0, %.01
-  %11 = sext i32 %.02 to i64
+  %10 = add nsw i32 %0, %1
+  %11 = sext i32 %.01 to i64
   %12 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %11
   store i32 %10, ptr %12, align 4
   br label %13
 
 13:                                               ; preds = %9
-  %14 = add nsw i32 %.02, 1
+  %14 = add nsw i32 %.01, 1
   br label %7, !llvm.loop !6
 
 15:                                               ; preds = %7
   br label %16
 
-16:                                               ; preds = %26, %15
-  %.0 = phi i32 [ 0, %15 ], [ %27, %26 ]
+16:                                               ; preds = %25, %15
+  %.0 = phi i32 [ 0, %15 ], [ %26, %25 ]
   %17 = icmp slt i32 %.0, 10
-  br i1 %17, label %18, label %28
+  br i1 %17, label %18, label %27
 
 18:                                               ; preds = %16
   %19 = add nsw i32 %.0, 1
   %20 = sext i32 %19 to i64
   %21 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %20
   %22 = load i32, ptr %21, align 4
-  %23 = add nsw i32 %22, %.01
-  %24 = sext i32 %.0 to i64
-  %25 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %24
-  store i32 %23, ptr %25, align 4
-  br label %26
+  %23 = sext i32 %.0 to i64
+  %24 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %23
+  store i32 %22, ptr %24, align 4
+  br label %25
 
-26:                                               ; preds = %18
-  %27 = add nsw i32 %.0, 1
+25:                                               ; preds = %18
+  %26 = add nsw i32 %.0, 1
   br label %16, !llvm.loop !8
 
-28:                                               ; preds = %16
-  %29 = add nsw i32 %0, %3
-  ret i32 %29
+27:                                               ; preds = %16
+  %28 = add nsw i32 %0, %3
+  ret i32 %28
 }
 
 attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
@@ -64,7 +62,7 @@ attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"Ubuntu clang version 19.1.1 (1ubuntu1)"}
+!5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}

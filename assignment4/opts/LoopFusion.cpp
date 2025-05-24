@@ -63,7 +63,6 @@ bool isControlFlowEquivalent(Loop &L1, Loop &L2, DominatorTree &DT, PostDominato
 * NB: usare Scalar Evolution
 **/
 bool haveSameIteration(Loop &L1, Loop &L2, ScalarEvolution &SE){
-  // Loop 1
   const SCEV *S1 = SE.getBackedgeTakenCount(&L1);
   const SCEV *S2 = SE.getBackedgeTakenCount(&L2);
   
@@ -71,14 +70,15 @@ bool haveSameIteration(Loop &L1, Loop &L2, ScalarEvolution &SE){
     outs() << "-> Cannot compute trip count for one or both loops.\n";
     return false;
   }
-
-  outs() << "-> BackedgeTakenCount of Loop " << loop_counter   << ": " << *S1 << " -> " << SE.getUnsignedRangeMax(S1) << "\n";
-  outs() << "-> BackedgeTakenCount of Loop " << loop_counter+1 << ": " << *S2 << " -> " << SE.getUnsignedRangeMax(S2) << "\n";
   
-  outs() << "S1: " << S1 << "\n";
-  outs() << "S2: " << S2 << "\n";
+  outs()  << "-> BackedgeTakenCount of Loop " << loop_counter   << ": " << "S1: " << *S1 << "\n";
+  outs()  << "-> BackedgeTakenCount of Loop " << loop_counter   << ": " << "S2: " << *S2 << "\n";
   
-  // Il confronto funziona, ma o cambiamo oppure dobbiamo capire che registri stiamo confrontando
+  /** 
+  Il confronto funziona poichè ogni loop viene analizzato e il risultato della SCEV viene memorizzato in un indirizzo di memoria. 
+  Se un altro loop viene analizzato e il risultato della SCEV è lo stesso, allora l'indirizzo di memoria sarà lo stesso. 
+  FROM DOCS: "We only create one SCEV of a particular shape, so pointer-comparisons for equality are legal".
+  **/
   return (S1 == S2);
 }
 
@@ -90,46 +90,61 @@ bool haveSameIteration(Loop &L1, Loop &L2, ScalarEvolution &SE){
 * a value that is computed by Lj at a future iteration m+n (where n > 0).
 **/
 bool haveNotNegativeDependencies(Loop &L1, Loop &L2, DependenceInfo &DI) {
-  outs() << "Controllo dipendenze negative\n";
+  // Ci serve l'indirizzo di A
+  // Poi dobbiamo vedere se l'offset di A nel secondo loop è un phi o un add di un valore positivo
+  // Allora non c'è distanza negativa se anche nel primo loop c'è un'istruzione con un phi o un'istruzione con lo stesso valore positivo (corrispettivamente) 
+  
+
   for(BasicBlock* BB: L1.blocks()){
     for(Instruction &I : *BB){
-      //Controllo se l'istruzione ha un uso nel secondo loop
-
-      Value *arrayPtr;
+      // Array
       if (auto *gep = dyn_cast<GetElementPtrInst>(&I)) {
-        arrayPtr = gep->getPointerOperand();
+        Value *arrayPtr = gep->getPointerOperand();
         outs() << "Istruzione GEP: " << I << " con puntatore: " << *arrayPtr << "\n";
-      }
 
-      for (auto &U : arrayPtr->uses()) {
-        if (Instruction* user = dyn_cast<Instruction>(U.getUser())) {
-          outs() << "Uso dell'array: " << *user << "\n";
+        for (auto &U : arrayPtr->uses()) {
+          if (Instruction* user = dyn_cast<Instruction>(U.getUser())) {
+            outs() << "Uso dell'array: " << *user << "\n";
+            
+            if (!L2.contains(user)) continue;
+
+            if (auto *gep2 = dyn_cast<GetElementPtrInst>(user)){ // Accediamo allo stesso array
+              Instruction *nextInst = gep->getNextNode();
+              Instruction *nextInst2 = gep2->getNextNode();
+              
+              if (auto *storeInst = dyn_cast<StoreInst>(nextInst)) {
+                if (auto *loadInst = dyn_cast<LoadInst>(nextInst2)) {
+                  outs() << "Store instruction after GEP: " << *storeInst << "\n";
+                  outs() << "Load instruction after GEP2: " << *loadInst << "\n";
+                  std::unique_ptr<Dependence> dep = DI.depends(storeInst, loadInst, true);
+                  dep->dump(outs());
+
+                  outs() << "loop indipendent -> " << dep->isLoopIndependent() << "\n";
+                  if (dep) {
+                    outs() << "-> Negative distance dependency found\n";
+                    return false;
+                  }
+                }
+              }
+            }
+          }    
+        } // Fine ciclo usi
+      } 
+      // Scalare
+      else {
+        for(Use &U : I.uses()){
+          if (Instruction* user = dyn_cast<Instruction>(U.getUser())){
+            // Se l'uso è nel secondo loop, controllo se ci sono dipendenze, cioè se l'istruzioe è dipendente da Loop. Se si la fusione non è valida
+            if (L2.contains(user) and !L1.isLoopInvariant(&I)) {
+              outs() << "-> Dependency found between " << *user << " and " << I << "\n";
+              return false;
+            }
+          }
         }
       }
-      
+    } // Ciclo istruzioni
+  } // Ciclo blocchi
 
-      // Ci serve l'indirizzo di A
-      // Poi dobbiamo vedere se l'offset di A nel secondo loop è un phi o un add di un valore positivo
-      // Allora non c'è distanza negativa se anche nel primo loop c'è un'istruzione con un phi o un'istruzione con lo stesso valore positivo (corrispettivamente) 
-      
-
-      // Da vedere
-      // for(Use &U : I.uses()){
-      //   if (Instruction* user = dyn_cast<Instruction>(U.getUser())){
-      //     // Se l'uso è nel secondo loop, controllo se ci sono dipendenze negative
-      //     if (L2.contains(user)){
-      //       outs() << "Istruzione usante nel secondo loop: " << *user << "\n";
-      //       outs() << "Istruzione usata: " << I << "\n";
-      //       auto dep = DI.depends(user, &I, true);
-      //       if(dep){
-      //         outs() << "-> Negative distance dependency found between " << *user << " and " << I << "\n";
-      //         return false;
-      //       }
-      //     }
-      //   }
-      // }
-    }
-  }
   return true;
 }
 
@@ -149,7 +164,6 @@ bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree 
     outs() << "=> Loop " << loop_counter << " is adjacent with Loop " << loop_counter+1 << "\n";
   else return false;
 
-  
   // --- Punto 3 ---
   outs() << "3) There is the Control Flow Equivalence?\n";
   if(isControlFlowEquivalent(*L1, *L2, DT, PDT)) 
@@ -165,7 +179,7 @@ bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree 
   // --- Punto 4 ---
   outs () << "4) Do Loops have negative dependencies?\n";
   if(haveNotNegativeDependencies(*L1, *L2, DI)) 
-    outs() << "=> Loop " << loop_counter << " and " << loop_counter+1 << " trip count have no negative dependencies \n";
+    outs() << "=> Loop " << loop_counter << " and " << loop_counter+1 << " have no negative dependencies \n";
   else return false;
 
   return true;
@@ -186,7 +200,7 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
     outs() << "* Checking Loop " << loop_counter << " and Loop " << loop_counter+1 << " *\n";
     
     if(isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
-      outs() << "Validity) Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
+      outs() << "\n" << "Validity) Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
       // FUSE
     }
 
