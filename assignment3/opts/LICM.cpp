@@ -166,7 +166,7 @@ PreservedAnalyses LoopInvariantCodeMotionPass::run(Function &F, FunctionAnalysis
         I->moveBefore(L->getLoopPreheader()->getTerminator());  // Sposta l'istruzione alla fine del preheader
         moved.insert(I);                                        // Aggiungo l'istruzione spostata al vettore
       }
-    }
+    } 
 
     outs() << "Istruzioni spostate: \n";
     for (Instruction* I : moved) {

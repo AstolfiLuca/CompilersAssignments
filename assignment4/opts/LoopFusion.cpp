@@ -221,6 +221,52 @@ bool haveNotNegativeScalarDependencies(Loop &L1, Loop &L2) {
   return true;
 }
 
+void printBlock(std::string s, BasicBlock *BB) {
+  outs() << s << ": ";
+  BB->printAsOperand(outs(), false);
+  outs() << "\n";
+}
+
+void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI){
+  auto inductionVariableL1 = L1->getCanonicalInductionVariable();
+  auto inductionVariableL2 = L2->getCanonicalInductionVariable();
+
+  // Sostituzione degli usi della induction variable di L2 con quella di L1
+  inductionVariableL2->replaceAllUsesWith(inductionVariableL1);
+  inductionVariableL2->eraseFromParent();
+
+  // Blocchi L1
+  BasicBlock *latchL1 = L1->getLoopLatch();
+  BasicBlock *headerL1 = L1->getHeader();
+  BasicBlock *lastBlockBodyL1 = latchL1->getSinglePredecessor();
+
+  // Blocchi L2
+  BasicBlock *firstBlockBodyL2 = L2->getHeader()->getTerminator()->getSuccessor(0);
+  BasicBlock *lastBlockBodyL2 = L2->getLoopLatch()->getSinglePredecessor();
+  BasicBlock *exitL2 = L2->getExitBlock();
+  
+  headerL1->getTerminator()->setSuccessor(1, exitL2); // Il secondo successore dell'header di L1 ora punta all'exit di L2
+  lastBlockBodyL1->getTerminator()->setSuccessor(0, firstBlockBodyL2); // L'ultimo blocco di L1 ora punta al primo blocco di L2
+  lastBlockBodyL2->getTerminator()->setSuccessor(0, latchL1);          // L'ultimo blocco di L2 ora punta al latch di L1
+
+  // Vettore che conterrà le istruzioni da spostare dal Preheader di L2 al Preheader di L1
+  std::vector<Instruction *> toMove;
+
+  // Raccogli le istruzioni non-branch da spostare
+  for (Instruction &inst : *(L2->getLoopPreheader())) {
+    if (!isa<BranchInst>(&inst)) {
+      toMove.push_back(&inst);
+    }
+  }
+
+  // Sposta le istruzioni prima del terminatore del preheader di L1
+  for (Instruction *inst : toMove) {
+    outs () << *inst;
+    inst->moveBefore(L1->getLoopPreheader()->getTerminator());
+  }
+  
+}
+
 
 
 /**  Esecuzione del passo di analisi "LoopFusionPass"  **/ 
@@ -238,8 +284,9 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
     outs() << "* Checking Loop " << loop_counter << " and Loop " << loop_counter+1 << " *\n";
     
     if(isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
-      outs() << "\n" << "Validity) Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
-      // FUSE
+      outs() << "\n" << "Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
+      merge (*L1, *L2, DT, PDT, SE, DI);
+      outs() << "\n" << "Loops fused";
     }
 
     loop_counter++;

@@ -9,89 +9,46 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
   %6 = alloca [10 x i32], align 16
   br label %7
 
-7:                                                ; preds = %15, %4
-  %.04 = phi i32 [ 0, %4 ], [ %16, %15 ]
-  %8 = icmp slt i32 %.04, 10
-  br i1 %8, label %9, label %17
+7:                                                ; preds = %13, %4
+  %.01 = phi i32 [ 0, %4 ], [ %14, %13 ]
+  %8 = icmp slt i32 %.01, 10
+  br i1 %8, label %9, label %15
 
 9:                                                ; preds = %7
-  %10 = sext i32 %.04 to i64
-  %11 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %10
-  %12 = load i32, ptr %11, align 4
-  %13 = sext i32 %.04 to i64
-  %14 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %13
-  store i32 %12, ptr %14, align 4
-  br label %15
+  %10 = add nsw i32 %0, %1
+  %11 = sext i32 %.01 to i64
+  %12 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %11
+  store i32 %10, ptr %12, align 4
+  br label %13
 
-15:                                               ; preds = %9
-  %16 = add nsw i32 %.04, 1
+13:                                               ; preds = %9
+  %14 = add nsw i32 %.01, 1
   br label %7, !llvm.loop !6
 
-17:                                               ; preds = %7
-  br label %18
+15:                                               ; preds = %7
+  br label %16
 
-18:                                               ; preds = %28, %17
-  %.03 = phi i32 [ 0, %17 ], [ %29, %28 ]
-  %19 = icmp slt i32 %.03, 10
-  br i1 %19, label %20, label %30
+16:                                               ; preds = %24, %15
+  %.0 = phi i32 [ 0, %15 ], [ %25, %24 ]
+  %17 = icmp slt i32 %.0, 10
+  br i1 %17, label %18, label %26
 
-20:                                               ; preds = %18
-  %21 = add nsw i32 %.03, 1
-  %22 = sext i32 %21 to i64
+18:                                               ; preds = %16
+  %19 = sext i32 %.0 to i64
+  %20 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %19
+  %21 = load i32, ptr %20, align 4
+  %22 = sext i32 %.0 to i64
   %23 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %22
-  %24 = load i32, ptr %23, align 4
-  %25 = add nsw i32 %.03, 1
-  %26 = sext i32 %25 to i64
-  %27 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %26
-  store i32 %24, ptr %27, align 4
-  br label %28
+  store i32 %21, ptr %23, align 4
+  br label %24
 
-28:                                               ; preds = %20
-  %29 = add nsw i32 %.03, 1
-  br label %18, !llvm.loop !8
+24:                                               ; preds = %18
+  %25 = add nsw i32 %.0, 1
+  br label %16, !llvm.loop !8
 
-30:                                               ; preds = %18
-  %31 = add nsw i32 %2, %3
-  br label %32
-
-32:                                               ; preds = %38, %30
-  %.02 = phi i32 [ 11, %30 ], [ %39, %38 ]
-  %.0 = phi i32 [ %0, %30 ], [ %37, %38 ]
-  %33 = icmp sge i32 %.02, 0
-  br i1 %33, label %34, label %40
-
-34:                                               ; preds = %32
-  %35 = sext i32 %.02 to i64
-  %36 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %35
-  %37 = load i32, ptr %36, align 4
-  br label %38
-
-38:                                               ; preds = %34
-  %39 = add nsw i32 %.02, -1
-  br label %32, !llvm.loop !9
-
-40:                                               ; preds = %32
-  br label %41
-
-41:                                               ; preds = %47, %40
-  %.01 = phi i32 [ 11, %40 ], [ %48, %47 ]
-  %42 = icmp sge i32 %.01, 0
-  br i1 %42, label %43, label %49
-
-43:                                               ; preds = %41
-  %44 = sub nsw i32 %.01, 1
-  %45 = sext i32 %44 to i64
-  %46 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %45
-  store i32 %1, ptr %46, align 4
-  br label %47
-
-47:                                               ; preds = %43
-  %48 = add nsw i32 %.01, -1
-  br label %41, !llvm.loop !10
-
-49:                                               ; preds = %41
-  %50 = add nsw i32 %.0, %3
-  ret i32 %50
+26:                                               ; preds = %16
+  %27 = add nsw i32 %0, %3
+  ret i32 %27
 }
 
 attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
@@ -108,5 +65,3 @@ attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
-!9 = distinct !{!9, !7}
-!10 = distinct !{!10, !7}

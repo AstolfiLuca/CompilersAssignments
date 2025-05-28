@@ -1,11 +1,18 @@
-int foo(int a) {
+int foo(int a, int c) {
   int b;
+  int z;
   for (int i = 0; i < 10; i++) {
-    int tmp = i + 2;
-    b = tmp;
+    z = a+b;
+    if(z>0){
+      b=10;
+    }else{
+      b=20;
+    }
+    a = 5;
   }
+  int x = 10 + c;
   for (int j = 0; j < 10; j++) {
-    a = b + 1;
+    c = j + 1;
   }
   return a;
 }
