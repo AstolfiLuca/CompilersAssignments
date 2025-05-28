@@ -5,19 +5,19 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline nounwind uwtable
 define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3) #0 {
-  %5 = alloca [10 x i32], align 16
-  %6 = alloca [10 x i32], align 16
+  %5 = alloca [12 x i32], align 16
+  %6 = alloca [12 x i32], align 16
   br label %7
 
 7:                                                ; preds = %13, %4
   %.01 = phi i32 [ 0, %4 ], [ %14, %13 ]
-  %8 = icmp slt i32 %.01, 10
+  %8 = icmp slt i32 %.01, 11
   br i1 %8, label %9, label %15
 
 9:                                                ; preds = %7
   %10 = add nsw i32 %0, %1
   %11 = sext i32 %.01 to i64
-  %12 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %11
+  %12 = getelementptr inbounds [12 x i32], ptr %5, i64 0, i64 %11
   store i32 %10, ptr %12, align 4
   br label %13
 
@@ -30,16 +30,16 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
 
 16:                                               ; preds = %25, %15
   %.0 = phi i32 [ 0, %15 ], [ %26, %25 ]
-  %17 = icmp slt i32 %.0, 10
+  %17 = icmp slt i32 %.0, 11
   br i1 %17, label %18, label %27
 
 18:                                               ; preds = %16
   %19 = add nsw i32 %.0, 1
   %20 = sext i32 %19 to i64
-  %21 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %20
+  %21 = getelementptr inbounds [12 x i32], ptr %5, i64 0, i64 %20
   %22 = load i32, ptr %21, align 4
   %23 = sext i32 %.0 to i64
-  %24 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %23
+  %24 = getelementptr inbounds [12 x i32], ptr %6, i64 0, i64 %23
   store i32 %22, ptr %24, align 4
   br label %25
 
