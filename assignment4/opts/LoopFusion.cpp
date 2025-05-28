@@ -127,94 +127,80 @@ bool isControlFlowEquivalent(Loop &L1, Loop &L2, DominatorTree &DT, PostDominato
 * a value that is computed by Lj at a future iteration m+n (where n > 0).
 **/
 bool haveNotNegativeDependencies(Loop &L1, Loop &L2, ScalarEvolution &SE, DependenceInfo &DI) {
-  // Ci serve l'indirizzo di A
-  // Poi dobbiamo vedere se l'offset di A nel secondo loop è un phi o un add di un valore positivo
-  // Allora non c'è distanza negativa se anche nel primo loop c'è un'istruzione con un phi o un'istruzione con lo stesso valore positivo (corrispettivamente) 
-  /*
-  for(BasicBlock* BB: L1.blocks()){
-    for(Instruction &I : *BB){
-      // Array - 1268
-      if (auto *gep = dyn_cast<GetElementPtrInst>(&I)) {
-        Value *arrayPtr = gep->getPointerOperand();
-        outs() << "Istruzione GEP: " << I << " con puntatore: " << *arrayPtr << "\n";
-
-        for (auto &U : arrayPtr->uses()) {
-          if (Instruction* user = dyn_cast<Instruction>(U.getUser())) {
-            outs() << "Uso dell'array: " << *user << "\n";
-            
-            if (!L2.contains(user)) continue;
-
-            if (auto *gep2 = dyn_cast<GetElementPtrInst>(user)){ // Accediamo allo stesso array
-              Instruction *nextInst = gep->getNextNode();
-              Instruction *nextInst2 = gep2->getNextNode();
-              
-              if (auto *storeInst = dyn_cast<StoreInst>(nextInst)) {
-                if (auto *loadInst = dyn_cast<LoadInst>(nextInst2)) {
-                  outs() << "Store instruction after GEP: " << *storeInst << "\n";
-                  outs() << "Load instruction after GEP2: " << *loadInst << "\n";
-                  std::unique_ptr<Dependence> dep = DI.depends(storeInst, loadInst, true);
-                  dep->dump(outs());
-
-                  if (dep) {
-                    outs() << "-> Negative distance dependency found\n";
-                    return false;
-                  }
-                }
-              }
-            }
-          }    
-        } // Fine ciclo usi
-      } // Fine controllo getElementPtrInst 
-    } // Ciclo istruzioni
-  } // Ciclo blocchi
-  */
-  
   return (haveNotNegativeMemoryDependencies(L1, L2, SE, DI) && haveNotNegativeScalarDependencies(L1, L2));
 }
 
 bool haveNotNegativeMemoryDependencies(Loop &L1, Loop &L2, ScalarEvolution &SE, DependenceInfo &DI) {
-  for (BasicBlock *BB1 : L1.blocks()) {
-    for (Instruction &I1 : *BB1) {
-      if (!I1.mayWriteToMemory())
-        continue;
+  // Ci serve l'indirizzo di A
+  // Poi dobbiamo vedere se l'offset di A nel secondo loop è un phi o un add di un valore positivo
+  // Allora non c'è distanza negativa se anche nel primo loop c'è un'istruzione con un phi o un'istruzione con lo stesso valore positivo (corrispettivamente) 
+  
+  for(BasicBlock* BB: L1.blocks()) {
+    for(Instruction &I : *BB) {
+      auto *storeGEP = dyn_cast<GetElementPtrInst>(&I);
+      if (!storeGEP) continue;
+      
+      auto *storeInst = dyn_cast<StoreInst>(storeGEP->getNextNode()); 
+      if (!storeInst) continue; // In L1 consideriamo solo Store
 
-      for (BasicBlock *BB2 : L2.blocks()) {
-        for (Instruction &I2 : *BB2) {
-          if (!I2.mayReadOrWriteMemory())
-            continue;
+      for (auto &U : storeGEP->getPointerOperand()->uses()) {
+        Instruction* user = dyn_cast<Instruction>(U.getUser());
+        if (!user || !L2.contains(user)) continue; 
 
-          std::unique_ptr<Dependence> Dep = DI.depends(&I1, &I2, true);
-          if (Dep && !Dep->isConfused() && (Dep->isFlow() || Dep->isAnti() || Dep->isOutput())) {
-            outs() << "-> Memory dependency found between: " << I1 << " and " << I2 << "\n";
+        // Accediamo allo stesso array
+        auto *storeOrLoadGEP = dyn_cast<GetElementPtrInst>(user);
+        if (!storeOrLoadGEP) continue;
 
-            // Calcola la differenza
-            const SCEV *NormalizedDiffL1 = SE.getSCEVAtScope(I1.getOperand(0), &L1);
-            const SCEV *NormalizedDiffL2 = SE.getSCEVAtScope(I2.getOperand(0), &L2);
-            const SCEV *Diff = SE.getMinusSCEV(NormalizedDiffL2, NormalizedDiffL1);
+        outs() << "   Store instruction after GEP: " << *storeGEP << "\n";
+        outs() << "   Load instruction after GEP2: " << *storeOrLoadGEP << "\n";
 
-            outs() << "   Normalized SCEV Difference: " << *NormalizedDiffL1 << "\n";
-            outs() << "   Normalized SCEV Difference: " << *NormalizedDiffL2 << "\n";
-            outs() << "   Difference SCEV: " << *Diff << "\n"; // {(-4 + (-1 * (%0 + %1)) + %5),+,4}<nw><%16> 
+        // NB: evitiamo di usare depends perchè la dipendenza è controllata manualmente
+        // Calcoliamo la differenza tra i due valori SCEV degli ElementPtr
+        const SCEV *storeSCEV = SE.getSCEVAtScope(storeGEP, &L1); // SCEV con il contesto del loop
+        const SCEV *loadSCEV = SE.getSCEVAtScope(storeOrLoadGEP, &L2);
+        const SCEV *Diff = SE.getMinusSCEV(loadSCEV, storeSCEV);
 
-            // Preleviamo il primissimo operando, ovvero l'offset iniziale
-            const SCEVConstant *ConstDiff = dyn_cast<SCEVConstant>(Diff);
-            while(!ConstDiff){
-              Diff = Diff->operands()[0]; // Prende il primo operando
-              ConstDiff = dyn_cast<SCEVConstant>(Diff);
-            }
-            outs() << "   Initial offset: " << *ConstDiff << "\n";
+        // 5 -> AddExpr
+        // 8 -> AddRecExpr ("dipendente dall'indice del loop")
+        outs() << "   Normalized SCEV (type: " << storeSCEV->getSCEVType() << ") Store: " << *storeSCEV << "\n"; 
+        outs() << "   Normalized SCEV (type: " << loadSCEV->getSCEVType() << ") Load: " << *loadSCEV << "\n";
+        outs() << "   Difference SCEV (type: " << Diff->getSCEVType() << ") Diff: " << *Diff << "\n"; 
 
-            // Controlliamo se l'offset iniziale è positivo (in tal caso, la dipendenza è negativa)
-            const APInt &Val = ConstDiff->getAPInt();
-            if (Val.isStrictlyPositive()) {
-              outs() << "-> Initial offset is positive -> negative dependency found: " << Val << "\n";
-                return false;
-            }
-          }
+        // Preleviamo il primissimo operando, differenza i due offset 
+        const SCEV *temp = Diff; 
+        const SCEVConstant *ConstDiff = dyn_cast<SCEVConstant>(temp);
+        
+        while(!ConstDiff){
+          temp = temp->operands()[0]; 
+          ConstDiff = dyn_cast<SCEVConstant>(temp);
         }
-      }
-    }
+        
+        int offset = ConstDiff->getValue()->getSExtValue();
+        outs() << "   Offset: " << offset << "\n";
+
+        // Verifichiamo che la differenza tra le due SCEV sia una SCEVAddRecExpr
+        // NB: SCEVAddRecExpr -> ricorrenza polinomiale sul trip count del ciclo specificato
+        const SCEVAddRecExpr *DiffRec = dyn_cast<SCEVAddRecExpr>(Diff);
+        if (!DiffRec) return false;
+
+        const SCEV *Step = DiffRec->getStepRecurrence(SE); // Dove tra L1 e L2 dovrebbe essere uguale dato il secondo punto e nel caso stessa guardia
+        const SCEVConstant *ConstStep = dyn_cast<SCEVConstant>(Step);
+        if(!ConstStep) return false;
+
+        int step = ConstStep->getValue()->getSExtValue();
+        outs() << "   Step value: " << step << "\n";
+      
+        // Se step è negativo, allora offset negativo = dipendenza negativa
+        if ((step > 0 && offset > 0) || (step < 0 && offset < 0)) {
+          outs() << "-> Negative dependency found due to offset " << offset << " with step " << step << "\n";
+          return false;
+        }
+
+        // Nessuna condizione negativa, quindi controlliamo le prossime istruzioni
+      }  
+    } 
   }
+
   return true;
 }
 
