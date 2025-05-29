@@ -15,9 +15,9 @@ int foo(int a, int b, int N, int f){
         A[i] = a + b;
     }
     for(int j=9; j>=0; j--){
-        B[j] = A[j-1];
+        B[j] = A[j];
     }
-    return a + f + g;
+    return A[0] + B[0] + g;
 }
 
 int main(){

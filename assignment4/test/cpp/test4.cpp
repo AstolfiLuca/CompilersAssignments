@@ -10,3 +10,6 @@ int fun(int a, int b, int n){
     }
     return a + b;
 }
+int main(){
+    return fun(1,2,3);
+}

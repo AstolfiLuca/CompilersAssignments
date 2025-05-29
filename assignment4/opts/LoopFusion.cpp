@@ -230,7 +230,34 @@ void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, Scalar
 
   // Sostituzione degli usi della induction variable di L2 con quella di L1
   inductionVariableL2->replaceAllUsesWith(inductionVariableL1);
-  inductionVariableL2->eraseFromParent();
+
+  SmallVector<PHINode*, 8> phisToMove;
+  BasicBlock *headerL2 = L2->getHeader();
+  outs() << "Prima del phi";
+
+  // Recupero le PHI nodes nel header di L2 che non sono l'induction variable 
+  for (auto &I : *headerL2) {
+    if (auto *PN = dyn_cast<PHINode>(&I)) {
+      if (PN != inductionVariableL2) {
+        phisToMove.push_back(PN);
+      }
+    }
+  }
+  
+  // Per ogni PHI Node trovata, aggiorno i blocchi di ingresso con quelli di L1
+  // Dopo sposto le PHI Nodes dopo l'induction variable di L1
+  for (PHINode *PN : phisToMove) {
+    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
+      BasicBlock *BB = PN->getIncomingBlock(i);
+      if (BB == L2->getLoopPreheader())
+        PN->setIncomingBlock(i, L1->getLoopPreheader());
+      else if (BB == L2->getLoopLatch())
+        PN->setIncomingBlock(i, L1->getLoopLatch());
+    }
+    PN->moveAfter(inductionVariableL1);
+  }
+
+  outs() << "Dopo il phi\n";
 
   // Blocchi L1
   BasicBlock *latchL1 = L1->getLoopLatch();
