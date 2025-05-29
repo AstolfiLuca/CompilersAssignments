@@ -10,46 +10,99 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
   br label %7
 
 7:                                                ; preds = %13, %4
-  %.01 = phi i32 [ 0, %4 ], [ %14, %13 ]
-  %8 = icmp slt i32 %.01, 10
+  %.03 = phi i32 [ 1, %4 ], [ %14, %13 ]
+  %8 = icmp slt i32 %.03, 10
   br i1 %8, label %9, label %15
 
 9:                                                ; preds = %7
   %10 = add nsw i32 %0, %1
-  %11 = sext i32 %.01 to i64
+  %11 = sext i32 %.03 to i64
   %12 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %11
   store i32 %10, ptr %12, align 4
   br label %13
 
 13:                                               ; preds = %9
-  %14 = add nsw i32 %.01, 1
+  %14 = mul nsw i32 %.03, 2
   br label %7, !llvm.loop !6
 
 15:                                               ; preds = %7
   br label %16
 
-16:                                               ; preds = %24, %15
-  %17 = icmp slt i32 %.01, 10
-  br i1 %17, label %18, label %25
+16:                                               ; preds = %25, %15
+  %.02 = phi i32 [ 1, %15 ], [ %26, %25 ]
+  %17 = icmp slt i32 %.02, 10
+  br i1 %17, label %18, label %27
 
 18:                                               ; preds = %16
-  %19 = sext i32 %.01 to i64
-  %20 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %19
-  %21 = load i32, ptr %20, align 4
-  %22 = sext i32 %.01 to i64
-  %23 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %22
-  store i32 %21, ptr %23, align 4
-  br label %24
+  %19 = add nsw i32 %.02, 2
+  %20 = sext i32 %19 to i64
+  %21 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %20
+  %22 = load i32, ptr %21, align 4
+  %23 = sext i32 %.02 to i64
+  %24 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %23
+  store i32 %22, ptr %24, align 4
+  br label %25
 
-24:                                               ; preds = %18
+25:                                               ; preds = %18
+  %26 = mul nsw i32 %.02, 2
   br label %16, !llvm.loop !8
 
-25:                                               ; preds = %16
-  %26 = add nsw i32 %0, %3
-  ret i32 %26
+27:                                               ; preds = %16
+  %28 = add nsw i32 %2, %3
+  br label %29
+
+29:                                               ; preds = %35, %27
+  %.01 = phi i32 [ 9, %27 ], [ %36, %35 ]
+  %30 = icmp sge i32 %.01, 0
+  br i1 %30, label %31, label %37
+
+31:                                               ; preds = %29
+  %32 = add nsw i32 %0, %1
+  %33 = sext i32 %.01 to i64
+  %34 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %33
+  store i32 %32, ptr %34, align 4
+  br label %35
+
+35:                                               ; preds = %31
+  %36 = add nsw i32 %.01, -1
+  br label %29, !llvm.loop !9
+
+37:                                               ; preds = %29
+  br label %38
+
+38:                                               ; preds = %47, %37
+  %.0 = phi i32 [ 9, %37 ], [ %48, %47 ]
+  %39 = icmp sge i32 %.0, 0
+  br i1 %39, label %40, label %49
+
+40:                                               ; preds = %38
+  %41 = sub nsw i32 %.0, 1
+  %42 = sext i32 %41 to i64
+  %43 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %42
+  %44 = load i32, ptr %43, align 4
+  %45 = sext i32 %.0 to i64
+  %46 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %45
+  store i32 %44, ptr %46, align 4
+  br label %47
+
+47:                                               ; preds = %40
+  %48 = add nsw i32 %.0, -1
+  br label %38, !llvm.loop !10
+
+49:                                               ; preds = %38
+  %50 = add nsw i32 %0, %3
+  %51 = add nsw i32 %50, %28
+  ret i32 %51
+}
+
+; Function Attrs: mustprogress noinline norecurse nounwind uwtable
+define dso_local noundef i32 @main() #1 {
+  %1 = call noundef i32 @_Z3fooiiii(i32 noundef 1, i32 noundef 2, i32 noundef 3, i32 noundef 4)
+  ret i32 %1
 }
 
 attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}
 !llvm.ident = !{!5}
@@ -63,3 +116,5 @@ attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
+!9 = distinct !{!9, !7}
+!10 = distinct !{!10, !7}

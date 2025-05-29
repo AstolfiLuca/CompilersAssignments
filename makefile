@@ -6,6 +6,7 @@ help:
 	@echo "  make build          - Compila la libreria per un assignment"
 	@echo "  make optimize       - Esegui l'ottimizzazione con opt, specificando i passi"
 	@echo "    - Esempio: make optimize assignment=1 test=file p=ai,sr,mi"
+	@echo "  make execute        - Esegui con lli i file di test .ll e quelli ottimizzati"
 	@echo "  make clean_builds   - Rimuove i file generati"
 
 configure_env:
@@ -58,6 +59,22 @@ optimize:
 	cd assignment$(assignment)/test && \
 	opt -load-pass-plugin ../build/libLocalOpt.so -p $(p)$(if $(filter 0,$(dce)),,$(comma)dce) ll/$(test).ll -o bc/$(test).optimized.bc && \
 	llvm-dis bc/$(test).optimized.bc -o ll_optimized/$(test).optimized.ll
+
+execute:
+	echo "\n*Esecuzione dei test* "; \
+	cd assignment$(assignment)/test && \
+	if [ -f ll/$(test).ll ]; then \
+		lli ll/$(test).ll; \
+		echo "Esecuzione $(test): $$?"; \
+	else \
+		echo "File ll/$(test).ll non trovato."; \
+	fi && \
+	if [ -f ll_optimized/$(test).optimized.ll ]; then \
+		lli ll_optimized/$(test).optimized.ll; \
+		echo "Esecuzione $(test) ottimizzato: $$?"; \
+	else \
+		echo "File ll_optimized/$(test).optimized.ll non trovato."; \
+	fi
 
 clean_builds:
 	find . -type d -name "build" -exec rm -rf {} +

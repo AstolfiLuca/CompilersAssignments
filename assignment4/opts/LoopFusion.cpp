@@ -16,7 +16,7 @@
 
 using namespace llvm;
 
-int loop_counter = 1; // Serve solo per l'output
+int loop_counter; // Serve solo per l'output
 
 // Prototipi delle funzioni di utilità (sotto ogni corrispettivo punto)
 BasicBlock* getExitGuardSuccessor(Loop &L);                                                          // Punto 1 
@@ -276,14 +276,24 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
   PostDominatorTree &PDT = AM.getResult<PostDominatorTreeAnalysis>(F);
   ScalarEvolution &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
   DependenceInfo &DI = AM.getResult<DependenceAnalysis>(F);
-  outs() << "\n*** LoopFusionPass ***\n\n";
-
+  
   // L1 è il loop attualmente analizzato, L2 è il loop successivo a L1
   // I loop vengono visitati in reverse order (dovuto alla depth first search)
-  for (auto L1 = LI.rbegin(), L2 = std::next(L1); L2 != LI.rend(); ++L1, ++L2) {
+  auto L1 = LI.rbegin();
+  if (L1 == LI.rend()) {
+    outs() << "Function " << F.getName() << ": no loops found in the function. \n";
+    return PreservedAnalyses::all();
+  }
+  
+  outs() << "\n   *** LoopFusionPass ***   \n";
+  outs() << "=== Function: " << F.getName() << " === \n\n";
+  loop_counter = 1; // Inizializzo il contatore dei loop
+
+
+  for (auto L2 = std::next(L1); L2 != LI.rend(); ++L1, ++L2) {
     outs() << "* Checking Loop " << loop_counter << " and Loop " << loop_counter+1 << " *\n";
     
-    if(isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
+    if(*L1 && *L2 && isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
       outs() << "\n" << "Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
       merge (*L1, *L2, DT, PDT, SE, DI);
       outs() << "\n" << "Loops fused";
