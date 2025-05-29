@@ -25,47 +25,45 @@ define dso_local noundef i32 @_Z3fooii(i32 noundef %0, i32 noundef %1) #0 {
   br label %10
 
 10:                                               ; preds = %14, %9
-  %.03 = phi i32 [ 0, %9 ], [ %15, %14 ]
   %.01 = phi i32 [ %1, %9 ], [ %13, %14 ]
-  %11 = icmp slt i32 %.03, 10
-  br i1 %11, label %12, label %16
+  %11 = icmp slt i32 %.02, 10
+  br i1 %11, label %12, label %15
 
 12:                                               ; preds = %10
-  %13 = add nsw i32 %.01, %.03
+  %13 = add nsw i32 %.01, %.02
   br label %14
 
 14:                                               ; preds = %12
-  %15 = add nsw i32 %.03, 1
   br label %10, !llvm.loop !8
 
-16:                                               ; preds = %10
-  %17 = icmp sgt i32 %.0, %.01
-  br i1 %17, label %18, label %19
+15:                                               ; preds = %10
+  %16 = icmp sgt i32 %.0, %.01
+  br i1 %16, label %17, label %18
 
-18:                                               ; preds = %16
+17:                                               ; preds = %15
+  br label %18
+
+18:                                               ; preds = %17, %15
+  %.04 = phi i32 [ %.0, %17 ], [ 0, %15 ]
   br label %19
 
-19:                                               ; preds = %18, %16
-  %.04 = phi i32 [ %.0, %18 ], [ 0, %16 ]
-  br label %20
+19:                                               ; preds = %23, %18
+  %.05 = phi i32 [ 0, %18 ], [ %24, %23 ]
+  %.1 = phi i32 [ %.04, %18 ], [ %22, %23 ]
+  %20 = icmp slt i32 %.05, 10
+  br i1 %20, label %21, label %25
 
-20:                                               ; preds = %24, %19
-  %.05 = phi i32 [ 0, %19 ], [ %25, %24 ]
-  %.1 = phi i32 [ %.04, %19 ], [ %23, %24 ]
-  %21 = icmp slt i32 %.05, 10
-  br i1 %21, label %22, label %26
+21:                                               ; preds = %19
+  %22 = add nsw i32 %.1, %.05
+  br label %23
 
-22:                                               ; preds = %20
-  %23 = add nsw i32 %.1, %.05
-  br label %24
+23:                                               ; preds = %21
+  %24 = add nsw i32 %.05, 1
+  br label %19, !llvm.loop !9
 
-24:                                               ; preds = %22
-  %25 = add nsw i32 %.05, 1
-  br label %20, !llvm.loop !9
-
-26:                                               ; preds = %20
-  %27 = add nsw i32 %.0, %.01
-  ret i32 %27
+25:                                               ; preds = %19
+  %26 = add nsw i32 %.0, %.01
+  ret i32 %26
 }
 
 attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }

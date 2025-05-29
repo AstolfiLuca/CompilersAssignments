@@ -12,7 +12,7 @@ int fun(int a, int b, int c){
             e = b + 1;
             break;
         }
-        d = a + 1; // a not momoved, so d not movable
+        d = a + 1; // a not moved, so d not movable
         i++;
     }
 

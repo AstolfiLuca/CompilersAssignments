@@ -7,26 +7,24 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
   br label %4
 
-4:                                                ; preds = %10, %3
-  %.01 = phi i32 [ 0, %3 ], [ %12, %10 ]
-  %.0 = phi i32 [ %0, %3 ], [ %7, %10 ]
+4:                                                ; preds = %9, %3
+  %.01 = phi i32 [ 0, %3 ], [ %10, %9 ]
+  %.0 = phi i32 [ %0, %3 ], [ %7, %9 ]
   %5 = icmp slt i32 %.01, 5
   br i1 %5, label %6, label %8
 
 6:                                                ; preds = %4
   %7 = add nsw i32 %1, %2
-  br label %10
+  br label %9
 
 8:                                                ; preds = %4
-  %9 = add nsw i32 %1, 1
-  br label %13
+  br label %11
 
-10:                                               ; preds = %6
-  %11 = add nsw i32 %7, 1
-  %12 = add nsw i32 %.01, 1
+9:                                                ; preds = %6
+  %10 = add nsw i32 %.01, 1
   br label %4, !llvm.loop !6
 
-13:                                               ; preds = %8
+11:                                               ; preds = %8
   ret i32 %.0
 }
 

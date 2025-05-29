@@ -28,9 +28,9 @@ bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree 
 
 
 /**  ----- Punto 1 ----- 
-* ! Lj and Lk must be adjacent
+* ! "Lj and Lk must be adjacent"
 *
-* There cannot be any statements that execute between the end of Lj and the beginning of Lk
+* "There cannot be any statements that execute between the end of Lj and the beginning of Lk"
 * NB: Punto 0 -> se L1 è guarded, L2 è guarded e viceversa
 * NB: Di base: do_while sono non guarded, for sono guarded (inserire un do_while in un if per renderlo guarded)
 * Guarded: il successore non loop (exit) della guardia L1 deve essere l'entry block di L2, ovvero il blocco della sua guardia (L2)
@@ -51,7 +51,7 @@ BasicBlock* getExitGuardSuccessor(Loop &L) {
 
 
 /** ----- Punto 2 ----- 
-* ! Lj and Lk must iterate the same number of times
+* ! "Lj and Lk must iterate the same number of times"
 * 
 * NB: usare Scalar Evolution
 **/
@@ -75,37 +75,15 @@ bool haveSameIteration(Loop &L1, Loop &L2, ScalarEvolution &SE){
   return (S1 == S2);
 }
 
-// Controlla se le due gardie sono semanticamente equivalenti
-bool areGuardsEqual(BranchInst *G1, BranchInst *G2) {
-  bool areEqual = false;
-
-  // Se sono entrambi Branch Condizionali, ritorna se le condizioni sono equivalenti
-  if (G1->isConditional() && G2->isConditional()) {
-    auto *icmp1 = dyn_cast<ICmpInst>(G1->getCondition());
-    auto *icmp2 = dyn_cast<ICmpInst>(G2->getCondition());
-
-    areEqual = (icmp1 && icmp2 && icmp1->isIdenticalTo(icmp2));
-  }
-
-  if (areEqual) 
-    outs() << "-> Guards of Loop " << loop_counter << "," << loop_counter+1 << " are equals\n";
-  else 
-    outs() << "-> Guards of Loop " << loop_counter << "," << loop_counter+1 << " are NOT equals\n";
-  
-  return areEqual;
-}
-
-
 
 /**  ----- Punto 3 -----   
-* ! Lj and Lk must be control flow equivalent
+* ! "Lj and Lk must be control flow equivalent"
 *
 * When Lj executes Lk also executes or when Lk executes Lj also executes 
 * NB: Punto 0 -> se L1 è guarded, L2 è guarded e viceversa
 **/
 bool isControlFlowEquivalent(Loop &L1, Loop &L2, DominatorTree &DT, PostDominatorTree &PDT) {
   // Se sono guarded: le guardie devono essere semanticamente equivalenti, altrimenti controllo *solo* dominanza/post-dominanza
-  // !areGuardsEqual(L1.getLoopGuardBranch(), L2.getLoopGuardBranch()
   if (L1.isGuarded() && !areGuardsEqual(L1.getLoopGuardBranch(), L2.getLoopGuardBranch())){
     outs() << "-> le guardie non sono semanticamente uguali \n";
     return false;
@@ -118,10 +96,29 @@ bool isControlFlowEquivalent(Loop &L1, Loop &L2, DominatorTree &DT, PostDominato
   return (DT.dominates(L1_block, L2_block) && PDT.dominates(L2_block, L1_block)); // True se L1 domina L2 ed L2 postdomina L1
 }
 
+// Controlla se le due guardie sono semanticamente equivalenti
+bool areGuardsEqual(BranchInst *G1, BranchInst *G2) {
+  bool areEqual = false;
+
+  // Se sono entrambi Branch Condizionali, ritorna se le condizioni sono equivalenti
+  if (G1->isConditional() && G2->isConditional()) {
+    auto *icmp1 = dyn_cast<ICmpInst>(G1->getCondition());
+    auto *icmp2 = dyn_cast<ICmpInst>(G2->getCondition());
+
+    areEqual = (icmp1 && icmp2 && icmp1->isIdenticalTo(icmp2)); // icmp1->isIdenticalTo, co
+  }
+
+  if (areEqual) 
+    outs() << "-> Guards of Loop " << loop_counter << "," << loop_counter+1 << " are equals\n";
+  else 
+    outs() << "-> Guards of Loop " << loop_counter << "," << loop_counter+1 << " are NOT equals\n";
+  
+  return areEqual;
+}
 
 
 /** ----- Punto 4 ----- 
-* ! There cannot be any negative distance dependencies between Lj and Lk
+* ! "There cannot be any negative distance dependencies between Lj and Lk"
 *
 * A negative distance dependence occurs between Lj and Lk, Lj before Lk, when at iteration m from Lk uses 
 * a value that is computed by Lj at a future iteration m+n (where n > 0).

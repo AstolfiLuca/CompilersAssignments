@@ -5,51 +5,48 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline nounwind uwtable
 define dso_local noundef i32 @_Z3fooii(i32 noundef %0, i32 noundef %1) #0 {
-  %3 = add nsw i32 10, %1
-  br label %4
+  br label %3
 
-4:                                                ; preds = %12, %2
-  %.03 = phi i32 [ 0, %2 ], [ %13, %12 ]
-  %.01 = phi i32 [ undef, %2 ], [ %.1, %12 ]
-  %.0 = phi i32 [ %0, %2 ], [ 5, %12 ]
-  %5 = icmp slt i32 %.03, 10
-  br i1 %5, label %6, label %21
+3:                                                ; preds = %11, %2
+  %.03 = phi i32 [ 0, %2 ], [ %12, %11 ]
+  %.01 = phi i32 [ undef, %2 ], [ %.1, %11 ]
+  %.0 = phi i32 [ %0, %2 ], [ 5, %11 ]
+  %4 = icmp slt i32 %.03, 10
+  br i1 %4, label %5, label %18
 
-6:                                                ; preds = %4
-  %7 = add nsw i32 %.0, %.01
-  %8 = icmp sgt i32 %7, 0
-  br i1 %8, label %9, label %10
+5:                                                ; preds = %3
+  %6 = add nsw i32 %.0, %.01
+  %7 = icmp sgt i32 %6, 0
+  br i1 %7, label %8, label %9
 
-9:                                                ; preds = %6
+8:                                                ; preds = %5
+  br label %10
+
+9:                                                ; preds = %5
+  br label %10
+
+10:                                               ; preds = %9, %8
+  %.1 = phi i32 [ 10, %8 ], [ 20, %9 ]
+  br label %16
+
+11:                                               ; preds = %16
+  %12 = add nsw i32 %.03, 1
+  br label %3, !llvm.loop !6
+
+13:                                               ; No predecessors!
+  br label %14
+
+14:                                               ; preds = %17, %13
+  %15 = icmp slt i32 %.03, 10
+  br i1 %15, label %16, label %18
+
+16:                                               ; preds = %10, %14
   br label %11
 
-10:                                               ; preds = %6
-  br label %11
+17:                                               ; No predecessors!
+  br label %14, !llvm.loop !8
 
-11:                                               ; preds = %10, %9
-  %.1 = phi i32 [ 10, %9 ], [ 20, %10 ]
-  br label %17
-
-12:                                               ; preds = %17
-  %13 = add nsw i32 %.03, 1
-  br label %4, !llvm.loop !6
-
-14:                                               ; No predecessors!
-  br label %15
-
-15:                                               ; preds = %19, %14
-  %16 = icmp slt i32 %.03, 10
-  br i1 %16, label %17, label %21
-
-17:                                               ; preds = %11, %15
-  %18 = add nsw i32 %.03, 1
-  br label %12
-
-19:                                               ; No predecessors!
-  %20 = add nsw i32 %.03, 1
-  br label %15, !llvm.loop !8
-
-21:                                               ; preds = %4, %15
+18:                                               ; preds = %3, %14
   ret i32 %.0
 }
 

@@ -13,7 +13,7 @@ define dso_local noundef i32 @_Z23algebraic_identity_testiiii(i32 noundef %0, i3
   %10 = add nsw i32 %9, 5
   %11 = add nsw i32 1, %7
   %12 = sub nsw i32 %11, 1
-  %13 = add nsw i32 %12, 5
+  %13 = mul nsw i32 %12, 5
   ret i32 %7
 }
 

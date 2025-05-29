@@ -5,34 +5,28 @@ target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline nounwind uwtable
 define dso_local noundef i32 @_Z3fooiiiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3, i32 noundef %4, i32 noundef %5) #0 {
-  %7 = add nsw i32 5, %5
-  %8 = add nsw i32 %7, %1
-  %9 = add nsw i32 %8, 4
-  %10 = add nsw i32 %8, 1
-  %11 = add nsw i32 %9, 2
-  br label %12
+  br label %7
 
-12:                                               ; preds = %19, %6
-  %.0 = phi i32 [ %4, %6 ], [ %20, %19 ]
-  %13 = icmp slt i32 %.0, 5
-  br i1 %13, label %14, label %21
+7:                                                ; preds = %13, %6
+  %.0 = phi i32 [ %4, %6 ], [ %14, %13 ]
+  %8 = icmp slt i32 %.0, 5
+  br i1 %8, label %9, label %15
 
-14:                                               ; preds = %12
-  %15 = icmp slt i32 %.0, 3
-  br i1 %15, label %16, label %18
+9:                                                ; preds = %7
+  %10 = icmp slt i32 %.0, 3
+  br i1 %10, label %11, label %12
 
-16:                                               ; preds = %14
-  %17 = add nsw i32 %7, 3
-  br label %21
+11:                                               ; preds = %9
+  br label %15
 
-18:                                               ; preds = %14
-  br label %19
+12:                                               ; preds = %9
+  br label %13
 
-19:                                               ; preds = %18
-  %20 = add nsw i32 %.0, 1
-  br label %12, !llvm.loop !6
+13:                                               ; preds = %12
+  %14 = add nsw i32 %.0, 1
+  br label %7, !llvm.loop !6
 
-21:                                               ; preds = %16, %12
+15:                                               ; preds = %11, %7
   ret i32 %1
 }
 

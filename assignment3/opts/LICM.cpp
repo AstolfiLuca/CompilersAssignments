@@ -34,18 +34,17 @@ ALGORITMO:
 #include "llvm/IR/Dominators.h"
 #include "llvm/ADT/SmallVector.h"
 
-// Funzione per controllare se un'istruzione è loop invariant
+// Funzione per controllare se un'istruzione è loop invariant 
 bool isLoopInvariant(SetVector<Instruction*> invariants, Loop &L, Instruction &Inst) {
   for (Value* op : Inst.operands()) { 
     // Sono loop invariant gli operandi costanti o argomenti di funzione
-    if (isa<Constant>(op) || isa<Argument>(op)) 
-      continue;
+    if (isa<Constant>(op) || isa<Argument>(op)) continue;
     
     // L'operando è loop invariant se la sua definizione è esterna la loop,
     // oppure se dentro al loop, non è un PHINode ed è loop invariant 
     if (Instruction* I = dyn_cast<Instruction>(op)) { 
       if (!L.contains(I) || (!isa<PHINode>(I) && invariants.contains(I))) 
-        continue;
+        continue; // l'operando è loop invariant 
     }
      
     return false;
@@ -57,25 +56,31 @@ bool isLoopInvariant(SetVector<Instruction*> invariants, Loop &L, Instruction &I
 // Funzione per eseguire la code motion
 bool isMovable(DominatorTree &DT, Loop &L, Instruction &I) {
   SmallVector<BasicBlock*> exitBB; 
-  L.getExitBlocks(exitBB); // Uscite del loop
+  L.getExitBlocks(exitBB); // Uscite del loop inserite in exitBB
   
   outs() << " - Istruzione: " << I << " -> ";
 
   // ---------- Controllo "Dominanza delle uscite" ---------- 
   bool domExit;
   for (BasicBlock* block : exitBB){ 
-    domExit = DT.dominates(I.getParent(), block);
+    domExit = DT.dominates(I.getParent(), block); // getParent() restituisce il blocco dell'istruzione
     
     if (!domExit) 
       break;
   }
   
-  // ---------- Controllo "Dead instruction" ---------- 
-  // -- Se non domina tutte le uscite del loop ED è alive, non posso fare code motion --
+  /* ---------- Controllo per procedere: "Dead instruction" ---------- 
+    SI Code motion se: 
+      "Si trovano in blocchi che dominano tutte le uscite del loop" OPPURE  
+      "la variabile definita dall'struzione è dead all'uscita del loop"
+      
+    NO code motion, al contrario, se: 
+      Se non domina tutte le uscite del loop ED è alive */
+
   if (!domExit){
     for(Use &U : I.uses()){
       if (Instruction* user = dyn_cast<Instruction>(U.getUser())){ 
-        // Se l'uso è al di fuori del loop, l'istruzione è alive
+        // Se ogni uso è al di fuori del loop, l'istruzione è alive (altrimenti è morta)
         if (!L.contains(user)){
           outs() << "domExit: " << domExit << "\n";
           return false;
@@ -85,6 +90,7 @@ bool isMovable(DominatorTree &DT, Loop &L, Instruction &I) {
   }
   
   for (Use &U : I.uses()){  
+    // "Assegnano un valore a variabili non assegnate altrove nel loop"
     // Se l'istruzione usata ha più di una definizione interna al loop, non posso fare la code motion
     if (PHINode* phi = dyn_cast<PHINode>(U.getUser())){
       if (L.contains(phi)){
@@ -93,6 +99,7 @@ bool isMovable(DominatorTree &DT, Loop &L, Instruction &I) {
       }
     }
 
+    // "Si trovano in blocchi che dominano tutti i blocchi nel loop che usano la variabile a cui si sta assegnando un valore"
     // Per fare la code motion, il blocco dell'istruzione deve dominare ogni suo uso
     if(!DT.dominates(I.getParent(), U)){
       outs() << "don't dominate all uses \n";
@@ -132,7 +139,7 @@ PreservedAnalyses LoopInvariantCodeMotionPass::run(Function &F, FunctionAnalysis
     SmallVector<BasicBlock*> exitBB;          // Uscite del loop (blocchi già fuori dal Loop)
     L->getExitBlocks(exitBB);                 // Metodo per ottenere le uscite del Loop
 
-    // Iteriamo sui blocchi del Loop (è di default una Depth First Search, dal blocco che domina tutto fino al blocco che non domina nu)
+    // Iteriamo sui blocchi del Loop (è di default una Depth First Search in pre-order)
     outs() << "Loop: ";
     for (BasicBlock* BB : L->blocks()) {
       BB->printAsOperand(errs(), false); // Stampa il blocco corrente
@@ -163,7 +170,7 @@ PreservedAnalyses LoopInvariantCodeMotionPass::run(Function &F, FunctionAnalysis
     // Per ogni istruzione movable, se non ha dipendenze non moved allora faccio la code motion
     for (Instruction *I : movable) {
       if (!hasDependencies(moved, *L, *I)){
-        I->moveBefore(L->getLoopPreheader()->getTerminator());  // Sposta l'istruzione alla fine del preheader
+        I->moveBefore(L->getLoopPreheader()->getTerminator());  // Sposta l'istruzione alla fine del preheader (ma prima del branch)
         moved.insert(I);                                        // Aggiungo l'istruzione spostata al vettore
       }
     } 
@@ -173,8 +180,8 @@ PreservedAnalyses LoopInvariantCodeMotionPass::run(Function &F, FunctionAnalysis
       outs() << "  --- " << *I << "\n";
     }
 
-    outs() << "\n Funzione aggiornata: \n";
-    F.print(outs()); // Stampa la funzione aggiornata
+    //outs() << "\n Funzione aggiornata: \n";
+    //F.print(outs()); // Stampa la funzione aggiornata
   }
 
   return PreservedAnalyses::all();

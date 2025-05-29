@@ -6,47 +6,45 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: mustprogress noinline nounwind uwtable
 define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noundef %2) #0 {
   %4 = add nsw i32 %0, %1
-  %5 = add nsw i32 %1, 1
-  br label %6
+  br label %5
 
-6:                                                ; preds = %21, %3
-  %.01 = phi i32 [ %2, %3 ], [ %16, %21 ]
-  %7 = icmp sgt i32 %.01, 5
-  br i1 %7, label %8, label %10
+5:                                                ; preds = %19, %3
+  %.01 = phi i32 [ %2, %3 ], [ %15, %19 ]
+  %6 = icmp sgt i32 %.01, 5
+  br i1 %6, label %7, label %9
 
-8:                                                ; preds = %6
-  %9 = add nsw i32 %4, 1
-  br label %22
+7:                                                ; preds = %5
+  %8 = add nsw i32 %4, 1
+  br label %20
 
-10:                                               ; preds = %6
-  %11 = sub nsw i32 %4, 1
+9:                                                ; preds = %5
+  %10 = sub nsw i32 %4, 1
+  br label %11
+
+11:                                               ; preds = %9
   br label %12
 
-12:                                               ; preds = %10
-  br label %13
+12:                                               ; preds = %18, %11
+  %.0 = phi i32 [ %10, %11 ], [ %17, %18 ]
+  %13 = icmp sgt i32 %.0, 5
+  br i1 %13, label %14, label %16
 
-13:                                               ; preds = %19, %12
-  %.0 = phi i32 [ %11, %12 ], [ %18, %19 ]
-  %14 = icmp sgt i32 %.0, 5
-  br i1 %14, label %15, label %17
-
-15:                                               ; preds = %13
-  %16 = add nsw i32 %.01, 1
-  br label %21
-
-17:                                               ; preds = %13
-  %18 = add nsw i32 %.0, 1
+14:                                               ; preds = %12
+  %15 = add nsw i32 %.01, 1
   br label %19
 
-19:                                               ; preds = %17
-  %20 = add nsw i32 %18, 5
-  br label %13, !llvm.loop !6
+16:                                               ; preds = %12
+  %17 = add nsw i32 %.0, 1
+  br label %18
 
-21:                                               ; preds = %15
-  br label %6, !llvm.loop !8
+18:                                               ; preds = %16
+  br label %12, !llvm.loop !6
 
-22:                                               ; preds = %8
-  ret i32 %9
+19:                                               ; preds = %14
+  br label %5, !llvm.loop !8
+
+20:                                               ; preds = %7
+  ret i32 %8
 }
 
 attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
