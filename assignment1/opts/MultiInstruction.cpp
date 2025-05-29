@@ -13,13 +13,13 @@
 bool isOptimizableOpt3(int instOpCode, int usedOpCode, int instNumber, int usedNumber, bool isFirstInstOpNumber, bool isFirstUsedOpNumber){
   return (
     instNumber == usedNumber && (
-      (usedOpCode == Instruction::Add && instOpCode == Instruction::Sub  && !isFirstInstOpNumber) || 
-      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Add  && !isFirstUsedOpNumber) || 
-      (usedOpCode == Instruction::Mul && instOpCode == Instruction::SDiv && !isFirstInstOpNumber) ||
-      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Sub  && isFirstInstOpNumber && isFirstUsedOpNumber)
+      (usedOpCode == Instruction::Add && instOpCode == Instruction::Sub  && !isFirstInstOpNumber) || // x = (a+3 || 3+a) ; y = x-3           => y=a 
+      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Add  && !isFirstUsedOpNumber) || // x = a-3          ; y = (x+3 || 3+x)  => y=a    
+      (usedOpCode == Instruction::Mul && instOpCode == Instruction::SDiv && !isFirstInstOpNumber) || // x = (a*3 || 3*a) ; y = x/3           => y=a
+      (usedOpCode == Instruction::Sub && instOpCode == Instruction::Sub  && isFirstInstOpNumber && isFirstUsedOpNumber) // x = 3-a ; y = 3-x => y=a
     ) || 
     instNumber == -usedNumber && (
-      (usedOpCode == Instruction::Add && instOpCode == Instruction::Add)
+      (usedOpCode == Instruction::Add && instOpCode == Instruction::Add) // x = (a+(-3) || (-3)+a) ; y = (x+3 || 3+x) => y=a  (e viceversa)
     )
   );
 }
@@ -30,8 +30,9 @@ bool runOnBasicBlockOpt3(BasicBlock &BB) {
 
       // Istruzione originale
       ConstantInt *instNumberOp; // Operando numerico dell'istruzione originale
-      Instruction *Used;       // Operando registro dell'originale (istruzione usata)
-      bool isFirstInstOpNumber; // True se il primo operando dell'istruzione originale è un numero, false altrimenti
+      Instruction *Used;         // Operando registro dell'originale (istruzione usata)
+      
+      bool isFirstInstOpNumber;  // True se il primo operando dell'istruzione originale è un numero, false altrimenti
       
       if (instNumberOp = dyn_cast<ConstantInt>(Inst.getOperand(0))) { 
         Used = dyn_cast<Instruction>(Inst.getOperand(1));
@@ -42,13 +43,12 @@ bool runOnBasicBlockOpt3(BasicBlock &BB) {
         isFirstInstOpNumber = false; 
       } 
       
-      if(!Used || !instNumberOp) 
-        continue;
+      if(!Used) continue; // I due operandi sono entrambi registri o numeri
       
       // Istruzione usata dall'originale
-      ConstantInt *usedNumberOp;  // Operando numerico
-      Value *replaceRegister;   // Operando registro con cui rimpiazziamo l'originale
-      bool isFirstUsedOpNumber; // True se il primo operando dell'istruzione utilizzata è un numero, false altrimenti
+      ConstantInt *usedNumberOp; // Operando numerico
+      Value *replaceRegister;    // Operando registro con cui rimpiazziamo l'originale
+      bool isFirstUsedOpNumber;  // True se il primo operando dell'istruzione utilizzata è un numero, false altrimenti
       
       if (usedNumberOp = dyn_cast<ConstantInt>(Used->getOperand(0))) { // Controllo se il primo operando è un numero
         replaceRegister = Used->getOperand(1); // No cast perchè è un Value
@@ -59,8 +59,7 @@ bool runOnBasicBlockOpt3(BasicBlock &BB) {
         isFirstUsedOpNumber = false;
       }
       
-      if(!replaceRegister || !usedNumberOp) 
-        continue;
+      if(!usedNumberOp) continue; // I due operandi sono entrambi registri o numeri
       
       int instNumber = cast<ConstantInt>(instNumberOp)->getSExtValue(); // Valore del numero nell'operazione originale
       int usedNumber = cast<ConstantInt>(usedNumberOp)->getSExtValue(); // Valore del numero nell'operazione usata

@@ -11,6 +11,7 @@ int algebraic_identity_test(int a, int b, int c, int d){
     // ADD (commutative) - SUB 
     c = 1 + a;
     d = c - 1; // d = (1 + a) - 1 = 1 + a - 1 = a 
-    b = d + 5; // test
+    b = d * 5; // test
+    
     return a;
 }

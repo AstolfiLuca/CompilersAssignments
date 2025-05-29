@@ -6,11 +6,12 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: mustprogress noinline nounwind uwtable
 define dso_local noundef i32 @_Z23strength_reduction_testi(i32 noundef %0) #0 {
   %2 = mul nsw i32 %0, 15
-  %3 = mul nsw i32 %2, 9
+  %3 = mul nsw i32 %2, 3
   %4 = mul nsw i32 %3, 6
   %5 = mul nsw i32 %4, -15
   %6 = sdiv i32 %5, %5
   %7 = sdiv i32 %6, 16
+  %8 = mul nsw i32 %5, %5
   ret i32 %7
 }
 
@@ -31,4 +32,4 @@ attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"Debian clang version 17.0.6 (++20231208085813+6009708b4367-1~exp1~20231208085906.81)"}
+!5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}

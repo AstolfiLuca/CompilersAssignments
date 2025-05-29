@@ -43,6 +43,8 @@ build:
 
 # Create the test (.ll) from the .cpp (passing through the bytecode .bc), given a specific flag. 
 # Note: it removes the load/store instructions
+flag := 0
+
 clang:
 	cd assignment$(assignment)/test && \
 	clang -O$(flag) -emit-llvm -Xclang -disable-O0-optnone -S cpp/$(test).cpp -o bc/$(test)_mem.bc && \

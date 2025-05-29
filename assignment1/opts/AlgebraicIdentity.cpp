@@ -10,43 +10,46 @@ bool runOnBasicBlockOpt1(BasicBlock &BB) {
   ConstantInt *intOp1, *intOp2;
 
   for(Instruction &Inst : BB) {
-    if (Inst.isBinaryOp()) {
-      zero = ConstantInt::get(Inst.getType(), 0);
-      one = ConstantInt::get(Inst.getType(), 1);
-      op1 = Inst.getOperand(0);
-      op2 = Inst.getOperand(1);
-      intOp1 = dyn_cast<ConstantInt>(op1);
-      intOp2 = dyn_cast<ConstantInt>(op2);
+    if (!Inst.isBinaryOp()) continue;
 
-      switch(Inst.getOpcode()) {
-        case Instruction::Add:
-          if (intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(op2);
-          else if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(op1);
-          break;
+    zero = ConstantInt::get(Inst.getType(), 0);
+    one = ConstantInt::get(Inst.getType(), 1);
 
-        case Instruction::Sub:
-          if (op1 == op2) Inst.replaceAllUsesWith(zero);
-          else if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(op1);
-          break;
+    op1 = Inst.getOperand(0);
+    op2 = Inst.getOperand(1);
+    
+    intOp1 = dyn_cast<ConstantInt>(op1);
+    intOp2 = dyn_cast<ConstantInt>(op2);
 
-        case Instruction::Mul:
-          if(intOp1) {
-            if (intOp1->isZero()) Inst.replaceAllUsesWith(zero);
-            else if (intOp1->isOne()) Inst.replaceAllUsesWith(op2);
-          } 
-          else if(intOp2) {
-            if (intOp2->isZero()) Inst.replaceAllUsesWith(zero);
-            else if (intOp2->isOne()) Inst.replaceAllUsesWith(op1);
-          }
-          break;
+    switch(Inst.getOpcode()) {
+      case Instruction::Add:
+        if (intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(op2);
+        else if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(op1);
+        break;
 
-        case Instruction::SDiv:
-          if (op1 == op2) Inst.replaceAllUsesWith(one);
-          else if(intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(zero);
-          else if(intOp2 && intOp2->isOne()) Inst.replaceAllUsesWith(op1);
-          break;
-      }
+      case Instruction::Sub:
+        if (op1 == op2) Inst.replaceAllUsesWith(zero);
+        else if (intOp2 && intOp2->isZero()) Inst.replaceAllUsesWith(op1);
+        break;
+
+      case Instruction::Mul:
+        if(intOp1) {
+          if (intOp1->isZero()) Inst.replaceAllUsesWith(zero);
+          else if (intOp1->isOne()) Inst.replaceAllUsesWith(op2);
+        } 
+        else if(intOp2) {
+          if (intOp2->isZero()) Inst.replaceAllUsesWith(zero);
+          else if (intOp2->isOne()) Inst.replaceAllUsesWith(op1);
+        }
+        break;
+
+      case Instruction::SDiv:
+        if (op1 == op2) Inst.replaceAllUsesWith(one);
+        else if(intOp1 && intOp1->isZero()) Inst.replaceAllUsesWith(zero);
+        else if(intOp2 && intOp2->isOne()) Inst.replaceAllUsesWith(op1);
+        break;
     }
+    
   }
 
   return true;
