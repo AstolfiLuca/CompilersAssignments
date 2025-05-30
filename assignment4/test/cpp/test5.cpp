@@ -1,3 +1,4 @@
+// Cicli con array
 int foo(int a, int b, int N, int f){
     int A[10];
     int B[10];
