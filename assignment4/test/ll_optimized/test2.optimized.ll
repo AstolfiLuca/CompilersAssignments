@@ -4,52 +4,63 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:
 target triple = "x86_64-pc-linux-gnu"
 
 ; Function Attrs: mustprogress noinline nounwind uwtable
-define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3) #0 {
-  %5 = icmp sgt i32 %3, 0
-  br i1 %5, label %6, label %12
+define dso_local noundef i32 @_Z3fooi(i32 noundef %0) #0 {
+  %2 = icmp sgt i32 %0, 0
+  br i1 %2, label %3, label %10
 
-6:                                                ; preds = %4
+3:                                                ; preds = %1
+  br label %4
+
+4:                                                ; preds = %7, %3
+  %.03 = phi i32 [ 0, %3 ], [ %5, %7 ]
+  %.01 = phi i32 [ 0, %3 ], [ %6, %7 ]
+  %5 = add nsw i32 %.03, %.01
+  %6 = add nsw i32 %.01, 1
   br label %7
 
-7:                                                ; preds = %9, %6
-  %.0 = phi i32 [ 0, %6 ], [ %8, %9 ]
-  %8 = add nsw i32 %.0, 1
-  br label %9
+7:                                                ; preds = %4
+  %8 = icmp slt i32 %6, %0
+  br i1 %8, label %4, label %9, !llvm.loop !6
 
 9:                                                ; preds = %7
-  %10 = icmp slt i32 %8, %3
-  br i1 %10, label %7, label %11, !llvm.loop !6
+  br label %10
 
-11:                                               ; preds = %9
-  br label %12
+10:                                               ; preds = %9, %1
+  %.14 = phi i32 [ %5, %9 ], [ 0, %1 ]
+  %11 = icmp sgt i32 %0, 0
+  br i1 %11, label %12, label %19
 
-12:                                               ; preds = %11, %4
-  %.1 = phi i32 [ %8, %11 ], [ 0, %4 ]
-  %13 = icmp sgt i32 %3, 0
-  br i1 %13, label %14, label %20
+12:                                               ; preds = %10
+  br label %13
 
-14:                                               ; preds = %12
-  br label %15
+13:                                               ; preds = %16, %12
+  %.12 = phi i32 [ 0, %12 ], [ %15, %16 ]
+  %.0 = phi i32 [ 0, %12 ], [ %14, %16 ]
+  %14 = add nsw i32 %.0, %.12
+  %15 = add nsw i32 %.12, 1
+  br label %16
 
-15:                                               ; preds = %17, %14
-  %.2 = phi i32 [ %.1, %14 ], [ %16, %17 ]
-  %16 = add nsw i32 %.2, 1
-  br label %17
+16:                                               ; preds = %13
+  %17 = icmp slt i32 %15, %0
+  br i1 %17, label %13, label %18, !llvm.loop !8
 
-17:                                               ; preds = %15
-  %18 = icmp slt i32 %16, %3
-  br i1 %18, label %15, label %19, !llvm.loop !8
+18:                                               ; preds = %16
+  br label %19
 
-19:                                               ; preds = %17
-  br label %20
+19:                                               ; preds = %18, %10
+  %.1 = phi i32 [ %14, %18 ], [ 0, %10 ]
+  %20 = add nsw i32 %.14, %.1
+  ret i32 %20
+}
 
-20:                                               ; preds = %19, %12
-  %21 = mul nsw i32 %1, %2
-  %22 = add nsw i32 %0, %21
-  ret i32 %22
+; Function Attrs: mustprogress noinline norecurse nounwind uwtable
+define dso_local noundef i32 @main() #1 {
+  %1 = call noundef i32 @_Z3fooi(i32 noundef 4)
+  ret i32 %1
 }
 
 attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}
 !llvm.ident = !{!5}

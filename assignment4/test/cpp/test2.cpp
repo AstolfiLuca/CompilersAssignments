@@ -1,29 +1,26 @@
 // Due loop guarded
-int foo(int a, int b, int c, int z){
-    int n=z;
+int foo(int n){
     int i = 0;
-    if (n > 0) {
-        int z = n+c;
-        do {
-          z = i+1;
-          i += 1;
-        } while (i < n);
-    }
-    int e = i + 1;
-    i=0;
-    if (n > 0){
+    int a = 0;
+    int b = 0;
+    if(n>0){
         do{
-            b += e;
-            e += 1;
-            i += 1;
-        } while(i < n);
+            a += i;
+            i++;
+        }while(i < n);
     }
-
-    return a+b+z+e;
+    i=0;
+    if(n>0){
+        do{
+            b += i;
+            i++;
+        }while(i < n);
+    }
+    return a + b;
 }
 
 int main(){
-    return foo(1,2,3,4);
+    return foo(4);
 }
 
 /* DA FARE:
