@@ -8,37 +8,38 @@ define dso_local noundef i32 @_Z3fooii(i32 noundef %0, i32 noundef %1) #0 {
   %3 = add nsw i32 10, %1
   br label %4
 
-4:                                                ; preds = %12, %2
-  %.03 = phi i32 [ 0, %2 ], [ %13, %12 ]
-  %.01 = phi i32 [ undef, %2 ], [ %.1, %12 ]
-  %.0 = phi i32 [ %0, %2 ], [ 5, %12 ]
+4:                                                ; preds = %13, %2
+  %.03 = phi i32 [ 0, %2 ], [ %14, %13 ]
+  %.01 = phi i32 [ undef, %2 ], [ %.1, %13 ]
+  %.0 = phi i32 [ %0, %2 ], [ 5, %13 ]
   %5 = icmp slt i32 %.03, 10
-  br i1 %5, label %6, label %16
+  %6 = icmp slt i32 %.03, 10
+  br i1 %5, label %7, label %17
 
-6:                                                ; preds = %4
-  %7 = add nsw i32 %.0, %.01
-  %8 = icmp sgt i32 %7, 0
-  br i1 %8, label %9, label %10
+7:                                                ; preds = %4
+  %8 = add nsw i32 %.0, %.01
+  %9 = icmp sgt i32 %8, 0
+  br i1 %9, label %10, label %11
 
-9:                                                ; preds = %6
-  br label %11
-
-10:                                               ; preds = %6
-  br label %11
-
-11:                                               ; preds = %10, %9
-  %.1 = phi i32 [ 10, %9 ], [ 20, %10 ]
-  br label %14
-
-12:                                               ; preds = %14
-  %13 = add nsw i32 %.03, 1
-  br label %4, !llvm.loop !6
-
-14:                                               ; preds = %11
-  %15 = add nsw i32 %.03, 1
+10:                                               ; preds = %7
   br label %12
 
-16:                                               ; preds = %4
+11:                                               ; preds = %7
+  br label %12
+
+12:                                               ; preds = %11, %10
+  %.1 = phi i32 [ 10, %10 ], [ 20, %11 ]
+  br label %15
+
+13:                                               ; preds = %15
+  %14 = add nsw i32 %.03, 1
+  br label %4, !llvm.loop !6
+
+15:                                               ; preds = %12
+  %16 = add nsw i32 %.03, 1
+  br label %13
+
+17:                                               ; preds = %4
   ret i32 %.0
 }
 

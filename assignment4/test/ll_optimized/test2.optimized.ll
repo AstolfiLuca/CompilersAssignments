@@ -12,9 +12,9 @@ define dso_local noundef i32 @_Z3fooi(i32 noundef %0) #0 {
   br label %4
 
 4:                                                ; preds = %7, %3
-  %.03 = phi i32 [ 0, %3 ], [ %5, %7 ]
+  %.02 = phi i32 [ 0, %3 ], [ %5, %7 ]
   %.01 = phi i32 [ 0, %3 ], [ %6, %7 ]
-  %5 = add nsw i32 %.03, %.01
+  %5 = add nsw i32 %.02, %.01
   %6 = add nsw i32 %.01, 1
   br label %7
 
@@ -26,7 +26,8 @@ define dso_local noundef i32 @_Z3fooi(i32 noundef %0) #0 {
   br label %10
 
 10:                                               ; preds = %9, %1
-  %.14 = phi i32 [ %5, %9 ], [ 0, %1 ]
+  %.13 = phi i32 [ %5, %9 ], [ 0, %1 ]
+  %.1 = phi i32 [ %6, %9 ], [ 0, %1 ]
   %11 = icmp sgt i32 %0, 0
   br i1 %11, label %12, label %19
 
@@ -34,10 +35,10 @@ define dso_local noundef i32 @_Z3fooi(i32 noundef %0) #0 {
   br label %13
 
 13:                                               ; preds = %16, %12
-  %.12 = phi i32 [ 0, %12 ], [ %15, %16 ]
-  %.0 = phi i32 [ 0, %12 ], [ %14, %16 ]
-  %14 = add nsw i32 %.0, %.12
-  %15 = add nsw i32 %.12, 1
+  %.04 = phi i32 [ 0, %12 ], [ %14, %16 ]
+  %.0 = phi i32 [ 0, %12 ], [ %15, %16 ]
+  %14 = add nsw i32 %.04, %.1
+  %15 = add nsw i32 %.0, 1
   br label %16
 
 16:                                               ; preds = %13
@@ -48,8 +49,8 @@ define dso_local noundef i32 @_Z3fooi(i32 noundef %0) #0 {
   br label %19
 
 19:                                               ; preds = %18, %10
-  %.1 = phi i32 [ %14, %18 ], [ 0, %10 ]
-  %20 = add nsw i32 %.14, %.1
+  %.15 = phi i32 [ %14, %18 ], [ 0, %10 ]
+  %20 = add nsw i32 %.13, %.15
   ret i32 %20
 }
 
@@ -70,7 +71,7 @@ attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"Ubuntu clang version 19.1.7 (++20250114103253+cd708029e0b2-1~exp1~20250114103309.40)"}
+!5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}

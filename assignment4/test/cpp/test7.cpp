@@ -1,17 +1,17 @@
+// Test con 3 loop da fondere
 int fun(int a, int b, int n){
     int c = 0;
+    int d = 0;
     for(int j=0; j < b; j++){
         a += b;
     }
-    // Negative dependencies
     for(int i = 0; i < b; i++){
-        a += b;
+        c += b;
     }
-    // Trip Count (b!=n)
-    for(int k=0; k < n; k++){
-        a += b;
+   for(int j=0; j < b; j++){
+        d += b;
     }
-    return a + b;
+    return a + b + c + d;
 }
 
 int main(){

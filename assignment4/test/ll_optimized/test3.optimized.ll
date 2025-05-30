@@ -13,7 +13,7 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
   br label %7
 
 7:                                                ; preds = %5
-  %8 = icmp slt i32 %0, %3
+  %8 = icmp slt i32 %6, %3
   br i1 %8, label %5, label %9, !llvm.loop !6
 
 9:                                                ; preds = %7
@@ -25,7 +25,7 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
   br label %12
 
 12:                                               ; preds = %10
-  %13 = icmp slt i32 %0, %3
+  %13 = icmp slt i32 %6, %3
   br i1 %13, label %10, label %14, !llvm.loop !8
 
 14:                                               ; preds = %12
@@ -51,7 +51,7 @@ attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"Ubuntu clang version 19.1.7 (++20250114103253+cd708029e0b2-1~exp1~20250114103309.40)"}
+!5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}

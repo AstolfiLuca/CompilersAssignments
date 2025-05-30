@@ -9,40 +9,41 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
   %6 = alloca [10 x i32], align 16
   br label %7
 
-7:                                                ; preds = %13, %4
-  %.01 = phi i32 [ 0, %4 ], [ %14, %13 ]
+7:                                                ; preds = %14, %4
+  %.01 = phi i32 [ 0, %4 ], [ %15, %14 ]
   %8 = icmp slt i32 %.01, 10
-  br i1 %8, label %9, label %21
+  %9 = icmp slt i32 %.01, 10
+  br i1 %8, label %10, label %22
 
-9:                                                ; preds = %7
-  %10 = add nsw i32 %0, %1
-  %11 = sext i32 %.01 to i64
-  %12 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %11
-  store i32 %10, ptr %12, align 4
-  br label %15
+10:                                               ; preds = %7
+  %11 = add nsw i32 %0, %1
+  %12 = sext i32 %.01 to i64
+  %13 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %12
+  store i32 %11, ptr %13, align 4
+  br label %16
 
-13:                                               ; preds = %15
-  %14 = add nsw i32 %.01, 1
+14:                                               ; preds = %16
+  %15 = add nsw i32 %.01, 1
   br label %7, !llvm.loop !6
 
-15:                                               ; preds = %9
-  %16 = sext i32 %.01 to i64
-  %17 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %16
-  %18 = load i32, ptr %17, align 4
-  %19 = sext i32 %.01 to i64
-  %20 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %19
-  store i32 %18, ptr %20, align 4
-  br label %13
+16:                                               ; preds = %10
+  %17 = sext i32 %.01 to i64
+  %18 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %17
+  %19 = load i32, ptr %18, align 4
+  %20 = sext i32 %.01 to i64
+  %21 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %20
+  store i32 %19, ptr %21, align 4
+  br label %14
 
-21:                                               ; preds = %7
-  %22 = add nsw i32 %2, %3
-  %23 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 0
-  %24 = load i32, ptr %23, align 16
-  %25 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 0
-  %26 = load i32, ptr %25, align 16
-  %27 = add nsw i32 %24, %26
-  %28 = add nsw i32 %27, %22
-  ret i32 %28
+22:                                               ; preds = %7
+  %23 = add nsw i32 %2, %3
+  %24 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 0
+  %25 = load i32, ptr %24, align 16
+  %26 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 0
+  %27 = load i32, ptr %26, align 16
+  %28 = add nsw i32 %25, %27
+  %29 = add nsw i32 %28, %23
+  ret i32 %29
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable

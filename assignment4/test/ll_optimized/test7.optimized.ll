@@ -1,5 +1,5 @@
-; ModuleID = 'bc/test4.optimized.bc'
-source_filename = "cpp/test4.cpp"
+; ModuleID = 'bc/test7.optimized.bc'
+source_filename = "cpp/test7.cpp"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
@@ -8,11 +8,11 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %4
 
 4:                                                ; preds = %9, %3
-  %.04 = phi i32 [ 0, %3 ], [ %10, %9 ]
+  %.05 = phi i32 [ 0, %3 ], [ %10, %9 ]
   %.0 = phi i32 [ %0, %3 ], [ %8, %9 ]
   %.03 = phi i32 [ 0, %3 ], [ %12, %9 ]
-  %5 = icmp slt i32 %.04, %1
-  %6 = icmp slt i32 %.04, %1
+  %5 = icmp slt i32 %.05, %1
+  %6 = icmp slt i32 %.05, %1
   br i1 %5, label %7, label %13
 
 7:                                                ; preds = %4
@@ -20,7 +20,7 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %11
 
 9:                                                ; preds = %11
-  %10 = add nsw i32 %.04, 1
+  %10 = add nsw i32 %.05, 1
   br label %4, !llvm.loop !6
 
 11:                                               ; preds = %7
@@ -31,13 +31,13 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %14
 
 14:                                               ; preds = %18, %13
+  %.04 = phi i32 [ 0, %13 ], [ %17, %18 ]
   %.01 = phi i32 [ 0, %13 ], [ %19, %18 ]
-  %.1 = phi i32 [ %.0, %13 ], [ %17, %18 ]
-  %15 = icmp slt i32 %.01, %2
+  %15 = icmp slt i32 %.01, %1
   br i1 %15, label %16, label %20
 
 16:                                               ; preds = %14
-  %17 = add nsw i32 %.1, %1
+  %17 = add nsw i32 %.04, %1
   br label %18
 
 18:                                               ; preds = %16
@@ -45,8 +45,10 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %14, !llvm.loop !8
 
 20:                                               ; preds = %14
-  %21 = add nsw i32 %.1, %1
-  ret i32 %21
+  %21 = add nsw i32 %.0, %1
+  %22 = add nsw i32 %21, %.03
+  %23 = add nsw i32 %22, %.04
+  ret i32 %23
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable

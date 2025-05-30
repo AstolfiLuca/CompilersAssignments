@@ -41,7 +41,7 @@ bool areAdjacent(Loop &L1, Loop &L2){
 
   //Controllo che i due Loop siano adiacenti
   bool blocksAdjacent = (L1.isGuarded() && getExitGuardSuccessor(L1) == L2.getLoopGuardBranch()->getParent()) || // Guarded
-  (!L1.isGuarded() && L1.getExitBlock() == L2.getLoopPreheader());
+                        (!L1.isGuarded() && L1.getExitBlock() == L2.getLoopPreheader());
 
   if(blocksAdjacent){
     // Controllo che tra i due loop non ci siano istruzioni che dipendono da L1
@@ -49,11 +49,26 @@ bool areAdjacent(Loop &L1, Loop &L2){
 
     for (Instruction &I : *firstL2) {
       if (isa<BranchInst>(&I)) break; // Fino all'istruzione di branch 
+
       for (Value *Op : I.operands()) {
+        outs() << "Operando: " << *Op << "\n";
         if (Instruction *Def = dyn_cast<Instruction>(Op)) {
           if (L1.contains(Def)) {
-            outs() << "-> L'istruzione " << I << " dipende da " << *Def << "\n";
-            return false; // C'è un'istruzione che dipende dal Loop 1
+            if (L1.isGuarded()){
+              // Controlliamo se ha un uso dentro il Loop 2
+              for (User *U : I.users()) {
+                if (Instruction *UserInst = dyn_cast<Instruction>(U)) {
+                  if (L2.contains(UserInst)) {
+                    outs() << "-> L'istruzione " << I << " dipende da " << *Def << "\n";
+                    outs() << "-> L'istruzione " << I << " ha un uso dentro il secondo loop: " << *UserInst << "\n";
+                    return false;
+                  }
+                }
+              }
+            } else {
+              outs() << "-> L'istruzione " << I << " dipende da " << *Def << "\n";
+              return false;
+            }
 
           }
         }
@@ -294,141 +309,107 @@ void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, Scalar
   /* Sostituzione degli usi della induction variable di L2 con quella di L1 */
   PHINode *inductionVariableL1 = L1->getCanonicalInductionVariable();
   PHINode *inductionVariableL2 = L2->getCanonicalInductionVariable();
+
   outs() << "Induction Variable L1: " << *inductionVariableL1 << "\n";
   outs() << "Induction Variable L2: " << *inductionVariableL2 << "\n";
+  
+  // STEP 1: Sostituzione della variabile di induzione di L2 con quella di L1
   inductionVariableL2->replaceAllUsesWith(inductionVariableL1);
   inductionVariableL2->eraseFromParent(); // Rimuove l'induction variable di L2
   
-  // Spostamento delle istruzioni non branch dal PreHeaderL2 al preHeaderL1
-  std::vector<Instruction*> instPreHeaderL2toMove;
-
-  // Raccogli le istruzioni non-branch da spostare
-  for (auto it = L2->getLoopPreheader()->begin(), end = L2->getLoopPreheader()->end(); it != end; ++it) {
-    Instruction &inst = *it;
-    if (!isa<BranchInst>(&inst)) {
-      instPreHeaderL2toMove.push_back(&inst);
+  // GUARDIA: non ben funzionante
+  if(guardL1) {
+    // GUARDIA 1: Modificando la variabile di induzione potremmo avere delle dipendenze negative
+    if(!haveNotNegativeDependencies(*L1, *L2, SE, DI)){
+      outs() << "Dipendenza negativa con stesso indice di loop \n";
+      return;
     }
-  }
-  
-  // Sposta le istruzioni prima del terminatore del preheader di L1
-  for (Instruction *inst : instPreHeaderL2toMove) {
-    outs () << "Instruzione da spostare dal PreheaderL2: " << *inst << "\n";
-    inst->moveBefore(L1->getLoopPreheader()->getTerminator());
-  }
 
-  if(guardL1){
-    outs() << "Guardia cambiata da ";
-    guardL1->getTerminator()->getSuccessor(1)->printAsOperand(outs(), false);
-    outs() << " a ";
-    guardL2->getTerminator()->getSuccessor(1)->printAsOperand(outs(), false);
-    guardL1->getTerminator()->setSuccessor(1, guardL2->getTerminator()->getSuccessor(1)); // Se L1 è guarded, il successore della guardia di L2 diventa la guardia di L1
+    printBlock("L1 Guard successor exit old: ", getExitGuardSuccessor(*L1));
+    printBlock("L1 guard successor exit new is successor 1 guard l2: ", getExitGuardSuccessor(*L2));
+
+    // GUARDIA 2: Il successore della guardia di L2 diventa la guardia di L1
+    guardL1->getTerminator()->setSuccessor(1, getExitGuardSuccessor(*L2)); 
 
     // Spostamento delle istruzioni non branch dalla Guardia di L2 alla Guardia di L1
     std::vector<Instruction*> instGuardL2toMove;
 
     // Raccogli le istruzioni non-branch da spostare
-    for (auto it = guardL2->begin(), end = guardL2->end(); it != end; ++it) {
-      Instruction &inst = *it;
-      if (!isa<BranchInst>(&inst)) {
+    for (Instruction &inst : *guardL2) {
+      if (&inst != guardL2->getTerminator()) {
         instGuardL2toMove.push_back(&inst);
       }
     }
     
     // Sposta le istruzioni prima del terminatore del preheader di L1
+    // NB: i phiNode non avranno mai usi nel loop 2, 
     for (Instruction *inst : instGuardL2toMove) {
       if(isa<PHINode>(inst)){
-        // Se l'istruzione è una PHI, spostala prima della prima istruzione non PHI del preheader di L1
-        inst->moveBefore(exitL2->getTerminator());
+        // Lo spostiamo alla fine, non ha usi in L2
+        inst->moveBefore(getExitGuardSuccessor(*L2)->getFirstNonPHI());
       } else {
         // Altrimenti spostala prima del terminatore della guardia di L1
         inst->moveBefore(guardL1->getTerminator());
       }
       outs () << "Instruzione da spostare dalla Guardia di L2: " << *inst << "\n";
-      
     }
   }
 
-  // Per ora abbiamo:
-  // 1) sostituito l'induction variable di L2 con quella di L1
-  // 2) spostato tutte le istruzioni non-branch dal preheader di L2 al preheader di L1
+  // STEP 2: Sostituzione dei blocchi del preheader di L2 con quello di L1
+  std::vector<Instruction*> instPreHeaderL2toMove;
 
-  // Creiamo un branch diretto (incondizionato) da headerL2 al suo body
-  //headerL2->getTerminator()->eraseFromParent();
-  //BranchInst::Create(firstBlockBodyL2, headerL2);
+  // STEP 2.1: Raccogli tutte le istruzioni non-branch spostare
+  for (Instruction &inst : *preHeaderL2) {
+    if (&inst != preHeaderL2->getTerminator()) {
+        instPreHeaderL2toMove.push_back(&inst);
+    }
+  }
   
-  // Sostituiamo nei PHI il blocco del Preheader di L2 con quello di L1
+  // STEP 2.2: Sposta le istruzioni prima del terminatore del preheader di L1
+  for (Instruction *inst : instPreHeaderL2toMove) {
+    outs () << "Instruzione da spostare dal PreheaderL2: " << *inst << "\n";
+    inst->moveBefore(preHeaderL1->getTerminator());
+  }
+
+  // STEP 2.3: Sostituzione nei PHINodes dei blocchi del preheader di L2 con quello di L1
   // NB: lo facciamo appositamente prima di spostare eventuali istruzioni dall'headerL2 all'headerL1 per avere i valori corretti
   preHeaderL2->replaceSuccessorsPhiUsesWith(preHeaderL1);
+  
+  // STEP 3: Sostituzione nei PHINodes dei blocchi del latch di L2 con quello di L1
   latchL2->replaceSuccessorsPhiUsesWith(latchL1);
 
-  //Spostiamo istruzioni da HeaderL2 usate al di fuori del Loop (causa: PHI)
+  // STEP 4: Spostiamo istruzioni da HeaderL2 usate al di fuori del Loop (causa: PHI)
   std::vector<Instruction*> instHeaderL2ToMove;
+  
+  // STEP 4.1: Raccogli tutte le istruzioni non-branch da spostare
   for (Instruction &inst : *headerL2) {
-    for (User *user : inst.users()) {
-      if (Instruction *userInst = dyn_cast<Instruction>(user)) {
-        if (!L2->contains(userInst))
-          instHeaderL2ToMove.push_back(&inst);
-      }
-    }
+    if (&inst != headerL2->getTerminator())
+      instHeaderL2ToMove.push_back(&inst);
   }
 
+  // STEP 4.2: Sposta le istruzioni prima del terminatore dell'header di L1
   for (Instruction *inst : instHeaderL2ToMove) {
     outs() << "Moving instruction from L2 header: " << *inst << "\n";
+
     if (isa<PHINode>(inst))
       inst->moveBefore(headerL1->getFirstNonPHI());
     else
       inst->moveBefore(headerL1->getTerminator());
   }
 
+  // STEP 5: L1 esce con l'exit di L2
   exitingL1->getTerminator()->setSuccessor(1, exitL2);
+
+  // Step 6: Dopo il body di L1 viene eseguito il body di L2
   lastBlockBodyL1->getTerminator()->setSuccessor(0, firstBlockBodyL2);
+  
+  // STEP 7: Dopo il body di L2 viene eseguito il latch di L1 (e quindi incrementiamo la variabile canonica)
   lastBlockBodyL2->getTerminator()->setSuccessor(0, latchL1);
 
+  // STEP 8: Elimina i blocchi non raggiungibili (preHeaderL2, headerL2, latchL2)
+  EliminateUnreachableBlocks(F);  
 
-  /*
-  if(guardL1){
-    std::vector<Instruction*> instGuardL2toMove;
-
-    // Raccogli le istruzioni non-branch da spostare
-    for (auto it = guardL2->begin(), end = guardL2->end(); it != end; ++it) {
-      Instruction &inst = *it;
-      if (!isa<BranchInst>(&inst)) {
-        instGuardL2toMove.push_back(&inst);
-        outs() << "Instruction to move from L2 Guard: " << inst << "\n";
-      }
-    }
-    
-    // Sposta le istruzioni prima del terminatore del guard di L1
-    for (Instruction *inst : instGuardL2toMove) {
-      outs () << "Instruzione da spostare dal PreheaderL2: " << *inst << "\n";
-      inst->moveBefore(guardL1->getTerminator());
-    }
-
-    guardL2->getTerminator()->getSuccessor(1)->printAsOperand(outs(), false);
-    guardL1->getTerminator()->setSuccessor(1, guardL2->getTerminator()->getSuccessor(1));
-
-    lastBlockBodyL1->getTerminator()->setSuccessor(0, guardL2);
-
-    guardL2->getTerminator()->eraseFromParent();
-    BranchInst::Create(preHeaderL2, guardL2);
-
-    
-  }
-  else{
-    lastBlockBodyL1->getTerminator()->setSuccessor(0, preHeaderL2);
-  }
-
-  headerL2->getTerminator()->eraseFromParent();
-  BranchInst::Create(firstBlockBodyL2, headerL2);
-
-  lastBlockBodyL2->getTerminator()->setSuccessor(0, latchL1);
-  exitingL1->getTerminator()->setSuccessor(1, exitL2);*/
-
-  
-  
-  EliminateUnreachableBlocks(F); // Elimina i blocchi non raggiungibili (preHeaderL2, headerL2, latchL2)  
   F.print(outs());
-  outs() << "Merge completed.\n";
 }
 
 

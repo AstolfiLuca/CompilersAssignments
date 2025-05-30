@@ -1,5 +1,5 @@
-; ModuleID = 'bc/test4.bc'
-source_filename = "cpp/test4.cpp"
+; ModuleID = 'bc/test7.bc'
+source_filename = "cpp/test7.cpp"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-pc-linux-gnu"
 
@@ -8,9 +8,9 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %4
 
 4:                                                ; preds = %8, %3
-  %.04 = phi i32 [ 0, %3 ], [ %9, %8 ]
+  %.05 = phi i32 [ 0, %3 ], [ %9, %8 ]
   %.0 = phi i32 [ %0, %3 ], [ %7, %8 ]
-  %5 = icmp slt i32 %.04, %1
+  %5 = icmp slt i32 %.05, %1
   br i1 %5, label %6, label %10
 
 6:                                                ; preds = %4
@@ -18,7 +18,7 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %8
 
 8:                                                ; preds = %6
-  %9 = add nsw i32 %.04, 1
+  %9 = add nsw i32 %.05, 1
   br label %4, !llvm.loop !6
 
 10:                                               ; preds = %4
@@ -42,13 +42,13 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %18
 
 18:                                               ; preds = %22, %17
+  %.04 = phi i32 [ 0, %17 ], [ %21, %22 ]
   %.01 = phi i32 [ 0, %17 ], [ %23, %22 ]
-  %.1 = phi i32 [ %.0, %17 ], [ %21, %22 ]
-  %19 = icmp slt i32 %.01, %2
+  %19 = icmp slt i32 %.01, %1
   br i1 %19, label %20, label %24
 
 20:                                               ; preds = %18
-  %21 = add nsw i32 %.1, %1
+  %21 = add nsw i32 %.04, %1
   br label %22
 
 22:                                               ; preds = %20
@@ -56,8 +56,10 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
   br label %18, !llvm.loop !9
 
 24:                                               ; preds = %18
-  %25 = add nsw i32 %.1, %1
-  ret i32 %25
+  %25 = add nsw i32 %.0, %1
+  %26 = add nsw i32 %25, %.03
+  %27 = add nsw i32 %26, %.04
+  ret i32 %27
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable
