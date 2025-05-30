@@ -13,6 +13,7 @@
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 using namespace llvm;
 
@@ -224,71 +225,116 @@ void printBlock(std::string s, BasicBlock *BB) {
   outs() << "\n";
 }
 
-void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI){
+void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI, Function &F){
+  // Blocchi L1
+  BasicBlock *preHeaderL1 = L1->getLoopPreheader();
+  BasicBlock *headerL1 = L1->getHeader();
+  BasicBlock *latchL1 = L1->getLoopLatch();
+  BasicBlock *firstBlockBodyL1 = headerL1->getTerminator()->getSuccessor(0);
+  BasicBlock *lastBlockBodyL1 = latchL1->getSinglePredecessor();
+  BasicBlock *exitingL1 = L1->getExitingBlock();
+  BasicBlock *exitL1 = L1->getExitBlock();
+
+  outs() << "*** L1 BLOCKS ***\n";
+  printBlock("L1 PreHeader", preHeaderL1);
+  printBlock("L1 Header", headerL1);
+  printBlock("L1 First Block Body", firstBlockBodyL1);
+  printBlock("L1 Last Block Body", lastBlockBodyL1);
+  printBlock("L1 Latch", latchL1);
+  printBlock("L1 Exiting Block", exitingL1);
+  printBlock("L1 Exit Block", exitL1);
+
+  // Blocchi L2
+  BasicBlock *preHeaderL2 = L2->getLoopPreheader();
+  BasicBlock *headerL2 = L2->getHeader();
+  BasicBlock *latchL2 = L2->getLoopLatch();
+  BasicBlock *firstBlockBodyL2 = headerL2->getTerminator()->getSuccessor(0);
+  BasicBlock *lastBlockBodyL2 = latchL2->getSinglePredecessor();
+  BasicBlock *exitingL2 = L2->getExitingBlock();
+  BasicBlock *exitL2 = L2->getExitBlock();
+
+  outs() << "*** L2 BLOCKS ***\n";
+  printBlock("L2 PreHeader", preHeaderL2);
+  printBlock("L2 Header", headerL2);
+  printBlock("L2 First Block Body", firstBlockBodyL2);
+  printBlock("L2 Last Block Body", lastBlockBodyL2);
+  printBlock("L2 Latch", latchL2);
+  printBlock("L2 Exiting Block", exitingL2);
+  printBlock("L2 Exit Block", exitL2);
+  
+  /* Se L1 ha la guardia, cambiamo la sua uscita con quella della guardia di L2 */
+  if (L1->isGuarded()) {
+    outs() << "L1 is guarded, changing exit to L2's guard successor.\n";
+    // Cambia il successore dell'exit block di L1 con il successore della guardia di L2
+    exitL1->getTerminator()->setSuccessor(1, getExitGuardSuccessor(*L2));
+  } 
+
+  /* Sostituzione degli usi della induction variable di L2 con quella di L1 */
   auto inductionVariableL1 = L1->getCanonicalInductionVariable();
   auto inductionVariableL2 = L2->getCanonicalInductionVariable();
-
-  // Sostituzione degli usi della induction variable di L2 con quella di L1
+  outs() << "Induction Variable L1: " << *inductionVariableL1 << "\n";
+  outs() << "Induction Variable L2: " << *inductionVariableL2 << "\n";
   inductionVariableL2->replaceAllUsesWith(inductionVariableL1);
+  inductionVariableL2->eraseFromParent(); // Rimuove l'induction variable di L2
 
-  SmallVector<PHINode*, 8> phisToMove;
-  BasicBlock *headerL2 = L2->getHeader();
-  outs() << "Prima del phi";
+  /* Spostamento delle istruzioni non branch dal PreHeaderL2 al preHeaderL1 */
+  std::vector<Instruction*> instPreHeaderL2toMove;
 
-  // Recupero le PHI nodes nel header di L2 che non sono l'induction variable 
-  for (auto &I : *headerL2) {
-    if (auto *PN = dyn_cast<PHINode>(&I)) {
-      if (PN != inductionVariableL2) {
-        phisToMove.push_back(PN);
+  // Raccogli le istruzioni non-branch da spostare
+  for (auto it = L2->getLoopPreheader()->begin(), end = L2->getLoopPreheader()->end(); it != end; ++it) {
+    Instruction &inst = *it;
+    if (!isa<BranchInst>(&inst)) {
+      instPreHeaderL2toMove.push_back(&inst);
+      outs() << "Instruction to move from L2 PreHeader: " << inst << "\n";
+    }
+  }
+  
+  // Sposta le istruzioni prima del terminatore del preheader di L1
+  for (Instruction *inst : instPreHeaderL2toMove) {
+    outs () << "Instruzione da spostare dal preheaderL2: " << *inst << "\n";
+    inst->moveBefore(L1->getLoopPreheader()->getTerminator());
+  }
+
+  // Per ora abbiamo:
+  // 1) sostituito l'induction variable di L2 con quella di L1
+  // 2) spostato tutte le istruzioni non-branch dal preheader di L2 al preheader di L1
+
+  // Creiamo un branch diretto (incondizionato) da headerL2 al suo body
+  //headerL2->getTerminator()->eraseFromParent();
+  //BranchInst::Create(firstBlockBodyL2, headerL2);
+
+  // Sostituiamo nei PHI il blocco del Preheader di L2 con quello di L1
+  // NB: lo facciamo appositamente prima di spostare eventuali istruzioni dall'headerL2 all'headerL1 per avere i valori corretti
+  preHeaderL2->replaceSuccessorsPhiUsesWith(preHeaderL1);
+  latchL2->replaceSuccessorsPhiUsesWith(latchL1);
+
+  /* Spostiamo istruzioni in HeaderL2 usate al di fuori del Loop (causa: PHI)*/  
+  std::vector<Instruction*> instHeaderL2ToMove;
+  for (Instruction &inst : *headerL2) {
+    for (User *user : inst.users()) {
+      if (Instruction *userInst = dyn_cast<Instruction>(user)) {
+        if (!L2->contains(userInst)) {
+          instHeaderL2ToMove.push_back(&inst);
+        }
       }
     }
   }
-  
-  // Per ogni PHI Node trovata, aggiorno i blocchi di ingresso con quelli di L1
-  // Dopo sposto le PHI Nodes dopo l'induction variable di L1
-  for (PHINode *PN : phisToMove) {
-    for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
-      BasicBlock *BB = PN->getIncomingBlock(i);
-      if (BB == L2->getLoopPreheader())
-        PN->setIncomingBlock(i, L1->getLoopPreheader());
-      else if (BB == L2->getLoopLatch())
-        PN->setIncomingBlock(i, L1->getLoopLatch());
-    }
-    PN->moveAfter(inductionVariableL1);
+
+  for (Instruction *inst : instHeaderL2ToMove) {
+    outs() << "Moving instruction from L2 header: " << *inst << "\n";
+    if (isa<PHINode>(inst))
+      inst->moveBefore(headerL1->getFirstNonPHI());
+    else
+      inst->moveBefore(headerL1->getTerminator());
   }
 
-  outs() << "Dopo il phi\n";
+  headerL1->getTerminator()->setSuccessor(1, exitL2);
+  lastBlockBodyL1->getTerminator()->setSuccessor(0, firstBlockBodyL2);
+  lastBlockBodyL2->getTerminator()->setSuccessor(0, latchL1);
 
-  // Blocchi L1
-  BasicBlock *latchL1 = L1->getLoopLatch();
-  BasicBlock *headerL1 = L1->getHeader();
-  BasicBlock *lastBlockBodyL1 = latchL1->getSinglePredecessor();
-
-  // Blocchi L2
-  BasicBlock *firstBlockBodyL2 = L2->getHeader()->getTerminator()->getSuccessor(0);
-  BasicBlock *lastBlockBodyL2 = L2->getLoopLatch()->getSinglePredecessor();
-  BasicBlock *exitL2 = L2->getExitBlock();
-  
-  headerL1->getTerminator()->setSuccessor(1, exitL2); // Il secondo successore dell'header di L1 ora punta all'exit di L2
-  lastBlockBodyL1->getTerminator()->setSuccessor(0, firstBlockBodyL2); // L'ultimo blocco di L1 ora punta al primo blocco di L2
-  lastBlockBodyL2->getTerminator()->setSuccessor(0, latchL1);          // L'ultimo blocco di L2 ora punta al latch di L1
-
-  // Vettore che conterrà le istruzioni da spostare dal Preheader di L2 al Preheader di L1
-  std::vector<Instruction *> toMove;
-
-  // Raccogli le istruzioni non-branch da spostare
-  for (Instruction &inst : *(L2->getLoopPreheader())) {
-    if (!isa<BranchInst>(&inst)) {
-      toMove.push_back(&inst);
-    }
-  }
-
-  // Sposta le istruzioni prima del terminatore del preheader di L1
-  for (Instruction *inst : toMove) {
-    outs () << *inst;
-    inst->moveBefore(L1->getLoopPreheader()->getTerminator());
-  }
-  
+  EliminateUnreachableBlocks(F); // Elimina i blocchi non raggiungibili (preHeaderL2, headerL2, latchL2)
+  F.print(outs());  
+  outs() << "Merge completed.\n";
 }
 
 
@@ -319,7 +365,7 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
     
     if(*L1 && *L2 && isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
       outs() << "\n" << "Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
-      merge (*L1, *L2, DT, PDT, SE, DI);
+      merge (*L1, *L2, DT, PDT, SE, DI, F);
       outs() << "\n" << "Loops fused";
     }
 
