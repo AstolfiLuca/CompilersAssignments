@@ -2,9 +2,11 @@ int fun(int a, int b, int n){
     for(int j=0; j < b; j++){
         a += b;
     }
+    // Dipendenza negativa
     for(int i = 0; i < b; i++){
         a += b;
     }
+    // Trip Count (b!=n)
     for(int k=0; k < n; k++){
         a += b;
     }

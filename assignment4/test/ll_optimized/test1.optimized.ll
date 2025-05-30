@@ -9,38 +9,26 @@ define dso_local noundef i32 @_Z3fooii(i32 noundef %0, i32 noundef %1) #0 {
 
 3:                                                ; preds = %7, %2
   %.02 = phi i32 [ 0, %2 ], [ %8, %7 ]
-  %.01 = phi i32 [ %1, %2 ], [ %13, %7 ]
   %.0 = phi i32 [ %0, %2 ], [ %6, %7 ]
+  %.01 = phi i32 [ %1, %2 ], [ %10, %7 ]
   %4 = icmp slt i32 %.02, 10
-  br i1 %4, label %5, label %16
+  br i1 %4, label %5, label %11
 
 5:                                                ; preds = %3
   %6 = add nsw i32 %.0, %.02
-  br label %12
+  br label %9
 
-7:                                                ; preds = %12
+7:                                                ; preds = %9
   %8 = add nsw i32 %.02, 1
   br label %3, !llvm.loop !6
 
-9:                                                ; No predecessors!
-  br label %10
-
-10:                                               ; preds = %14, %9
-  %.03 = phi i32 [ 0, %9 ], [ %15, %14 ]
-  %11 = icmp slt i32 %.02, 10
-  br i1 %11, label %12, label %16
-
-12:                                               ; preds = %5, %10
-  %13 = add nsw i32 %.01, %.02
+9:                                                ; preds = %5
+  %10 = add nsw i32 %.01, %.02
   br label %7
 
-14:                                               ; No predecessors!
-  %15 = add nsw i32 %.02, 1
-  br label %10, !llvm.loop !8
-
-16:                                               ; preds = %3, %10
-  %17 = add nsw i32 %.0, %.01
-  ret i32 %17
+11:                                               ; preds = %3
+  %12 = add nsw i32 %.0, %.01
+  ret i32 %12
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable
@@ -60,7 +48,6 @@ attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"Ubuntu clang version 19.1.7 (++20250114103253+cd708029e0b2-1~exp1~20250114103309.40)"}
+!5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
-!8 = distinct !{!8, !7}

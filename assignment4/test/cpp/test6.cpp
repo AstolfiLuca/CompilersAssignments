@@ -1,3 +1,4 @@
+// FUSIONE
 int foo(int a, int c) {
   int b;
   int z;
@@ -15,4 +16,8 @@ int foo(int a, int c) {
     c = j + 1;
   }
   return a;
+}
+
+int main() {
+  return foo(1, 2);
 }

@@ -10,89 +10,39 @@ define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 nou
   br label %7
 
 7:                                                ; preds = %13, %4
-  %.03 = phi i32 [ 1, %4 ], [ %14, %13 ]
-  %8 = icmp slt i32 %.03, 10
-  br i1 %8, label %9, label %15
+  %.01 = phi i32 [ 0, %4 ], [ %14, %13 ]
+  %8 = icmp slt i32 %.01, 10
+  br i1 %8, label %9, label %21
 
 9:                                                ; preds = %7
   %10 = add nsw i32 %0, %1
-  %11 = sext i32 %.03 to i64
+  %11 = sext i32 %.01 to i64
   %12 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %11
   store i32 %10, ptr %12, align 4
-  br label %13
+  br label %15
 
-13:                                               ; preds = %9
-  %14 = mul nsw i32 %.03, 2
+13:                                               ; preds = %15
+  %14 = add nsw i32 %.01, 1
   br label %7, !llvm.loop !6
 
-15:                                               ; preds = %7
-  br label %16
+15:                                               ; preds = %9
+  %16 = sext i32 %.01 to i64
+  %17 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %16
+  %18 = load i32, ptr %17, align 4
+  %19 = sext i32 %.01 to i64
+  %20 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %19
+  store i32 %18, ptr %20, align 4
+  br label %13
 
-16:                                               ; preds = %25, %15
-  %.02 = phi i32 [ 1, %15 ], [ %26, %25 ]
-  %17 = icmp slt i32 %.02, 10
-  br i1 %17, label %18, label %27
-
-18:                                               ; preds = %16
-  %19 = add nsw i32 %.02, 2
-  %20 = sext i32 %19 to i64
-  %21 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %20
-  %22 = load i32, ptr %21, align 4
-  %23 = sext i32 %.02 to i64
-  %24 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %23
-  store i32 %22, ptr %24, align 4
-  br label %25
-
-25:                                               ; preds = %18
-  %26 = mul nsw i32 %.02, 2
-  br label %16, !llvm.loop !8
-
-27:                                               ; preds = %16
-  %28 = add nsw i32 %2, %3
-  br label %29
-
-29:                                               ; preds = %35, %27
-  %.01 = phi i32 [ 9, %27 ], [ %36, %35 ]
-  %30 = icmp sge i32 %.01, 0
-  br i1 %30, label %31, label %37
-
-31:                                               ; preds = %29
-  %32 = add nsw i32 %0, %1
-  %33 = sext i32 %.01 to i64
-  %34 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %33
-  store i32 %32, ptr %34, align 4
-  br label %35
-
-35:                                               ; preds = %31
-  %36 = add nsw i32 %.01, -1
-  br label %29, !llvm.loop !9
-
-37:                                               ; preds = %29
-  br label %38
-
-38:                                               ; preds = %47, %37
-  %.0 = phi i32 [ 9, %37 ], [ %48, %47 ]
-  %39 = icmp sge i32 %.0, 0
-  br i1 %39, label %40, label %49
-
-40:                                               ; preds = %38
-  %41 = sub nsw i32 %.0, 1
-  %42 = sext i32 %41 to i64
-  %43 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 %42
-  %44 = load i32, ptr %43, align 4
-  %45 = sext i32 %.0 to i64
-  %46 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 %45
-  store i32 %44, ptr %46, align 4
-  br label %47
-
-47:                                               ; preds = %40
-  %48 = add nsw i32 %.0, -1
-  br label %38, !llvm.loop !10
-
-49:                                               ; preds = %38
-  %50 = add nsw i32 %0, %3
-  %51 = add nsw i32 %50, %28
-  ret i32 %51
+21:                                               ; preds = %7
+  %22 = add nsw i32 %2, %3
+  %23 = getelementptr inbounds [10 x i32], ptr %5, i64 0, i64 0
+  %24 = load i32, ptr %23, align 16
+  %25 = getelementptr inbounds [10 x i32], ptr %6, i64 0, i64 0
+  %26 = load i32, ptr %25, align 16
+  %27 = add nsw i32 %24, %26
+  %28 = add nsw i32 %27, %22
+  ret i32 %28
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable
@@ -115,6 +65,3 @@ attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
-!8 = distinct !{!8, !7}
-!9 = distinct !{!9, !7}
-!10 = distinct !{!10, !7}

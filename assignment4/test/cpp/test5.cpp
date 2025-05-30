@@ -1,23 +1,26 @@
-// Cicli con array
+// Cicli con array -> FUSIONE
 int foo(int a, int b, int N, int f){
     int A[10];
     int B[10];
 
-    for(int i=1; i<10; i*=2){
+    for(int i=0; i<10; i++){
         A[i] = a + b;
     }
-    for(int j=1; j<10; j*=2){
-        B[j] = A[j+2];
+    for(int j=0; j<10; j++){
+        B[j] = A[j];
     }
 
     int g = N + f;
-
+    /*
+    // Controllo dipendenze OK, ma niente merge perchè non è canonica
+    // Canonica: parte da 0 e si ferma ad un certo punto
     for(int i=9; i>=0; i--){
         A[i] = a + b;
     }
     for(int j=9; j>=0; j--){
         B[j] = A[j];
     }
+    */
     return A[0] + B[0] + g;
 }
 

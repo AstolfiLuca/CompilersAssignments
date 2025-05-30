@@ -54,7 +54,14 @@ define dso_local noundef i32 @_Z3fooii(i32 noundef %0, i32 noundef %1) #0 {
   ret i32 %.0
 }
 
+; Function Attrs: mustprogress noinline norecurse nounwind uwtable
+define dso_local noundef i32 @main() #1 {
+  %1 = call noundef i32 @_Z3fooii(i32 noundef 1, i32 noundef 2)
+  ret i32 %1
+}
+
 attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
 
 !llvm.module.flags = !{!0, !1, !2, !3, !4}
 !llvm.ident = !{!5}
@@ -64,7 +71,7 @@ attributes #0 = { mustprogress noinline nounwind uwtable "frame-pointer"="all" "
 !2 = !{i32 7, !"PIE Level", i32 2}
 !3 = !{i32 7, !"uwtable", i32 2}
 !4 = !{i32 7, !"frame-pointer", i32 2}
-!5 = !{!"Ubuntu clang version 19.1.7 (++20250114103253+cd708029e0b2-1~exp1~20250114103309.40)"}
+!5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}

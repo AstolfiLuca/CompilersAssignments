@@ -225,6 +225,10 @@ void printBlock(std::string s, BasicBlock *BB) {
   outs() << "\n";
 }
 
+void merge_guarded(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI, Function &F){
+  return;
+}
+
 void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI, Function &F){
   // Blocchi L1
   BasicBlock *preHeaderL1 = L1->getLoopPreheader();
@@ -261,17 +265,10 @@ void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, Scalar
   printBlock("L2 Latch", latchL2);
   printBlock("L2 Exiting Block", exitingL2);
   printBlock("L2 Exit Block", exitL2);
-  
-  /* Se L1 ha la guardia, cambiamo la sua uscita con quella della guardia di L2 */
-  if (L1->isGuarded()) {
-    outs() << "L1 is guarded, changing exit to L2's guard successor.\n";
-    // Cambia il successore dell'exit block di L1 con il successore della guardia di L2
-    exitL1->getTerminator()->setSuccessor(1, getExitGuardSuccessor(*L2));
-  } 
 
   /* Sostituzione degli usi della induction variable di L2 con quella di L1 */
-  auto inductionVariableL1 = L1->getCanonicalInductionVariable();
-  auto inductionVariableL2 = L2->getCanonicalInductionVariable();
+  PHINode *inductionVariableL1 = L1->getCanonicalInductionVariable();
+  PHINode *inductionVariableL2 = L2->getCanonicalInductionVariable();
   outs() << "Induction Variable L1: " << *inductionVariableL1 << "\n";
   outs() << "Induction Variable L2: " << *inductionVariableL2 << "\n";
   inductionVariableL2->replaceAllUsesWith(inductionVariableL1);
@@ -291,7 +288,7 @@ void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, Scalar
   
   // Sposta le istruzioni prima del terminatore del preheader di L1
   for (Instruction *inst : instPreHeaderL2toMove) {
-    outs () << "Instruzione da spostare dal preheaderL2: " << *inst << "\n";
+    outs () << "Instruzione da spostare dal PreheaderL2: " << *inst << "\n";
     inst->moveBefore(L1->getLoopPreheader()->getTerminator());
   }
 
@@ -313,9 +310,8 @@ void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, Scalar
   for (Instruction &inst : *headerL2) {
     for (User *user : inst.users()) {
       if (Instruction *userInst = dyn_cast<Instruction>(user)) {
-        if (!L2->contains(userInst)) {
+        if (!L2->contains(userInst))
           instHeaderL2ToMove.push_back(&inst);
-        }
       }
     }
   }
@@ -328,12 +324,12 @@ void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, Scalar
       inst->moveBefore(headerL1->getTerminator());
   }
 
-  headerL1->getTerminator()->setSuccessor(1, exitL2);
+  exitingL1->getTerminator()->setSuccessor(1, exitL2);
   lastBlockBodyL1->getTerminator()->setSuccessor(0, firstBlockBodyL2);
   lastBlockBodyL2->getTerminator()->setSuccessor(0, latchL1);
-
-  EliminateUnreachableBlocks(F); // Elimina i blocchi non raggiungibili (preHeaderL2, headerL2, latchL2)
-  F.print(outs());  
+  
+  EliminateUnreachableBlocks(F); // Elimina i blocchi non raggiungibili (preHeaderL2, headerL2, latchL2)  
+  F.print(outs());
   outs() << "Merge completed.\n";
 }
 
