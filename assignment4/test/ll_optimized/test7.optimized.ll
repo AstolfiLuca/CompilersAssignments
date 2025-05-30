@@ -30,25 +30,49 @@ define dso_local noundef i32 @_Z3funiii(i32 noundef %0, i32 noundef %1, i32 noun
 13:                                               ; preds = %4
   br label %14
 
-14:                                               ; preds = %18, %13
-  %.04 = phi i32 [ 0, %13 ], [ %17, %18 ]
-  %.01 = phi i32 [ 0, %13 ], [ %19, %18 ]
-  %15 = icmp slt i32 %.01, %1
-  br i1 %15, label %16, label %20
+14:                                               ; preds = %19, %13
+  %.07 = phi i32 [ 0, %13 ], [ %20, %19 ]
+  %.1 = phi i32 [ %.0, %13 ], [ %18, %19 ]
+  %15 = icmp slt i32 %.07, %2
+  br i1 %15, label %16, label %21
 
 16:                                               ; preds = %14
-  %17 = add nsw i32 %.04, %1
-  br label %18
+  %17 = add nsw i32 %.03, 0
+  %18 = add nsw i32 %.1, %17
+  br label %19
 
-18:                                               ; preds = %16
-  %19 = add nsw i32 %.01, 1
+19:                                               ; preds = %16
+  %20 = add nsw i32 %.07, 1
   br label %14, !llvm.loop !8
 
-20:                                               ; preds = %14
-  %21 = add nsw i32 %.0, %1
-  %22 = add nsw i32 %21, %.03
-  %23 = add nsw i32 %22, %.04
-  ret i32 %23
+21:                                               ; preds = %14
+  br label %22
+
+22:                                               ; preds = %27, %21
+  %.04 = phi i32 [ 0, %21 ], [ %26, %27 ]
+  %.02 = phi i32 [ 0, %21 ], [ %28, %27 ]
+  %.2 = phi i32 [ %.1, %21 ], [ %30, %27 ]
+  %23 = icmp slt i32 %.02, %1
+  %24 = icmp slt i32 %.02, %1
+  br i1 %23, label %25, label %31
+
+25:                                               ; preds = %22
+  %26 = add nsw i32 %.04, %1
+  br label %29
+
+27:                                               ; preds = %29
+  %28 = add nsw i32 %.02, 1
+  br label %22, !llvm.loop !9
+
+29:                                               ; preds = %25
+  %30 = add nsw i32 %.2, %1
+  br label %27
+
+31:                                               ; preds = %22
+  %32 = add nsw i32 %.2, %1
+  %33 = add nsw i32 %32, %.03
+  %34 = add nsw i32 %33, %.04
+  ret i32 %34
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable
@@ -72,3 +96,4 @@ attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
 !8 = distinct !{!8, !7}
+!9 = distinct !{!9, !7}

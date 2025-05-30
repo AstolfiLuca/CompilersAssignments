@@ -8,8 +8,14 @@ int fun(int a, int b, int n){
     for(int i = 0; i < b; i++){
         c += b;
     }
-   for(int j=0; j < b; j++){
-        d += b;
+    for(int j=0; j < n; j++){
+        a += c + d;
+    }
+    for(int j=0; j < b; j++){
+       d += b;
+    }
+    for(int j=0; j < b; j++){
+       a += b;
     }
     return a + b + c + d;
 }

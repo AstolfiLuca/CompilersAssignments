@@ -25,6 +25,7 @@ bool areGuardsEqual(BranchInst *G1, BranchInst *G2);                            
 bool haveNotNegativeMemoryDependencies(Loop &L1, Loop &L2, ScalarEvolution &SE, DependenceInfo &DI); // Punto 4
 bool haveNotNegativeScalarDependencies(Loop &L1, Loop &L2);                                          // Punto 4
 bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI);
+void printBlock(std::string s, BasicBlock *BB); // Stampa un blocco con il suo nome
 
 
 
@@ -42,6 +43,8 @@ bool areAdjacent(Loop &L1, Loop &L2){
   //Controllo che i due Loop siano adiacenti
   bool blocksAdjacent = (L1.isGuarded() && getExitGuardSuccessor(L1) == L2.getLoopGuardBranch()->getParent()) || // Guarded
                         (!L1.isGuarded() && L1.getExitBlock() == L2.getLoopPreheader());
+  printBlock("L1 exit block", L1.getExitBlock());
+  printBlock("L2 preheader block", L2.getLoopPreheader());
 
   if(blocksAdjacent){
     // Controllo che tra i due loop non ci siano istruzioni che dipendono da L1
@@ -422,29 +425,52 @@ PreservedAnalyses LoopFusionPass::run(Function &F, FunctionAnalysisManager &AM) 
   ScalarEvolution &SE = AM.getResult<ScalarEvolutionAnalysis>(F);
   DependenceInfo &DI = AM.getResult<DependenceAnalysis>(F);
   
-  // L1 è il loop attualmente analizzato, L2 è il loop successivo a L1
-  // I loop vengono visitati in reverse order (dovuto alla depth first search)
-  auto L1 = LI.rbegin();
-  if (L1 == LI.rend()) {
+  // Controlla se ci sono loop nella funzione
+  if (LI.rbegin() == LI.rend()) {
     outs() << "Function " << F.getName() << ": no loops found in the function. \n";
     return PreservedAnalyses::all();
   }
   
   outs() << "\n   *** LoopFusionPass ***   \n";
   outs() << "=== Function: " << F.getName() << " === \n\n";
-  loop_counter = 1; // Inizializzo il contatore dei loop
 
-
-  for (auto L2 = std::next(L1); L2 != LI.rend(); ++L1, ++L2) {
+  // Itera sui loop in ordine inverso (dal primo dall'ultimo, perchè in loopinfo sono in ordine inverso)
+  loop_counter = 1;  
+  auto L1 = LI.rbegin();
+  auto L2 = std::next(L1);
+  
+  while (L2 != LI.rend()){
     outs() << "* Checking Loop " << loop_counter << " and Loop " << loop_counter+1 << " *\n";
     
-    if(*L1 && *L2 && isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
+    if(isLoopFusionValid(*L1, *L2, DT, PDT, SE, DI)){
       outs() << "\n" << "Loop " << loop_counter << " and Loop " << loop_counter+1 << " can be fused\n\n";
-      merge (*L1, *L2, DT, PDT, SE, DI, F);
-      outs() << "\n" << "Loops fused";
-    }
 
-    loop_counter++;
+      merge(*L1, *L2, DT, PDT, SE, DI, F);
+      
+      // Ricostruisci le analisi dopo la trasformazione
+      DT.recalculate(F);  
+      PDT.recalculate(F);
+      SE.forgetLoop(*L1); // Chiamato quando il cambiamento di un loop può influenzare la capacità di SCEV di calcolare il trip count
+      
+      // Rilascia la memoria di LoopInfo per ricostruire le informazioni sui loop e lo rianalizza
+      LI.releaseMemory(); 
+      LI.analyze(DT);
+
+      // Riassegnazione (ripartiamo dal loop mergiato)
+      L1 = LI.rbegin();  
+      for(int i = 1; i < loop_counter; i++) {
+        L1++; // Salta i loop già fusi
+      }
+      L2 = std::next(L1);
+
+      outs() << "\n" << "Loops fused - L2 is removed and L1 is updated. L3 is the new L2 \n";
+    } else {
+      // Passa al prossimo loop
+      loop_counter++;
+      L1++;
+      L2 = std::next(L1);
+    }
+    
     outs() << "\n";
   }
   

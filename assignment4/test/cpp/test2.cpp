@@ -1,16 +1,5 @@
-// Due loop guarded
-int foo(int n){
-    int i = 0;
-    int a = 0;
-    int b = 0;
-    if(n>0){
-        do{
-            a += i;
-            i++;
-        }while(i < n);
-    }
-    
-    /*
+/*  Due loop guarded (non funziona mai con le guardie)
+    PROBLEMA:
     Prendiamo la variabile di induzione canonica di L1
     Facciamo lo stesso per L2
     Sostituiamo gli usi della variabile ind. di L2 con quella di L1
@@ -24,8 +13,20 @@ int foo(int n){
     nell'header di L2 (perchè i loop con guardia hanno una struttura diversa)
     prima dell'aggiornamento di j++ (che diventa i++),
     poi spostarle prima del primo uso di i nell'header di L1.
+    Per ora abbiamo sostituito la variabile di induzione canonica,
+    ma controlliamo che non ci siano usi di i nel L2 (e quindi fallisce l'ottimizzazione).
+*/
+int foo(int n){
+    int i = 0;
+    int a = 0;
+    int b = 0;
+    if(n>0){
+        do{
+            a += i;
+            i++;
+        }while(i < n);
+    }
     
-    */
     if(n>0){
         int j=0;
         do{
