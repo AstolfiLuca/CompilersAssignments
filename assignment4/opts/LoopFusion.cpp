@@ -231,6 +231,7 @@ void merge_guarded(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT
 
 void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI, Function &F){
   // Blocchi L1
+  BasicBlock *guardL1 = L1->isGuarded() ? L1->getLoopGuardBranch()->getParent() : nullptr;
   BasicBlock *preHeaderL1 = L1->getLoopPreheader();
   BasicBlock *headerL1 = L1->getHeader();
   BasicBlock *latchL1 = L1->getLoopLatch();
@@ -249,6 +250,7 @@ void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, Scalar
   printBlock("L1 Exit Block", exitL1);
 
   // Blocchi L2
+  BasicBlock *guardL2 = L2->isGuarded() ? L2->getLoopGuardBranch()->getParent() : nullptr;
   BasicBlock *preHeaderL2 = L2->getLoopPreheader();
   BasicBlock *headerL2 = L2->getHeader();
   BasicBlock *latchL2 = L2->getLoopLatch();

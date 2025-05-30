@@ -6,51 +6,57 @@ target triple = "x86_64-pc-linux-gnu"
 ; Function Attrs: mustprogress noinline nounwind uwtable
 define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3) #0 {
   %5 = icmp sgt i32 %3, 0
-  br i1 %5, label %6, label %13
+  br i1 %5, label %6, label %14
 
 6:                                                ; preds = %4
-  br label %7
+  %7 = add nsw i32 %3, %2
+  br label %8
 
-7:                                                ; preds = %10, %6
-  %.0 = phi i32 [ 0, %6 ], [ %9, %10 ]
-  %8 = add nsw i32 %.0, 1
-  %9 = add nsw i32 %.0, 1
-  br label %10
+8:                                                ; preds = %11, %6
+  %.03 = phi i32 [ 0, %6 ], [ %10, %11 ]
+  %9 = add nsw i32 %.03, 1
+  %10 = add nsw i32 %.03, 1
+  br label %11
 
-10:                                               ; preds = %7
-  %11 = icmp slt i32 %9, %3
-  br i1 %11, label %7, label %12, !llvm.loop !6
+11:                                               ; preds = %8
+  %12 = icmp slt i32 %10, %3
+  br i1 %12, label %8, label %13, !llvm.loop !6
 
-12:                                               ; preds = %10
-  br label %13
+13:                                               ; preds = %11
+  br label %14
 
-13:                                               ; preds = %12, %4
-  %.03 = phi i32 [ %8, %12 ], [ %3, %4 ]
-  %14 = icmp sgt i32 %3, 0
-  br i1 %14, label %15, label %22
+14:                                               ; preds = %13, %4
+  %.14 = phi i32 [ %10, %13 ], [ 0, %4 ]
+  %15 = add nsw i32 %.14, 1
+  %16 = icmp sgt i32 %3, 0
+  br i1 %16, label %17, label %25
 
-15:                                               ; preds = %13
-  br label %16
+17:                                               ; preds = %14
+  br label %18
 
-16:                                               ; preds = %19, %15
-  %.01 = phi i32 [ %1, %15 ], [ %17, %19 ]
-  %.1 = phi i32 [ 0, %15 ], [ %18, %19 ]
-  %17 = add nsw i32 %.01, %.03
-  %18 = add nsw i32 %.1, 1
-  br label %19
-
-19:                                               ; preds = %16
-  %20 = icmp slt i32 %18, %3
-  br i1 %20, label %16, label %21, !llvm.loop !8
-
-21:                                               ; preds = %19
+18:                                               ; preds = %22, %17
+  %.2 = phi i32 [ 0, %17 ], [ %21, %22 ]
+  %.01 = phi i32 [ %1, %17 ], [ %19, %22 ]
+  %.0 = phi i32 [ %15, %17 ], [ %20, %22 ]
+  %19 = add nsw i32 %.01, %.0
+  %20 = add nsw i32 %.0, 1
+  %21 = add nsw i32 %.2, 1
   br label %22
 
-22:                                               ; preds = %21, %13
-  %.12 = phi i32 [ %17, %21 ], [ %1, %13 ]
-  %23 = mul nsw i32 %.12, %2
-  %24 = add nsw i32 %0, %23
-  ret i32 %24
+22:                                               ; preds = %18
+  %23 = icmp slt i32 %21, %3
+  br i1 %23, label %18, label %24, !llvm.loop !8
+
+24:                                               ; preds = %22
+  br label %25
+
+25:                                               ; preds = %24, %14
+  %.12 = phi i32 [ %19, %24 ], [ %1, %14 ]
+  %.1 = phi i32 [ %20, %24 ], [ %15, %14 ]
+  %26 = add nsw i32 %0, %.12
+  %27 = add nsw i32 %26, %3
+  %28 = add nsw i32 %27, %.1
+  ret i32 %28
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable
