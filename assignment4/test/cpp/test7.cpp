@@ -2,14 +2,15 @@
 int fun(int a, int b, int n){
     int c = 0;
     int d = 0;
-    for(int j=0; j < b; j++){
+    int j;
+    for(j=0; j < b; j++){
         a += b;
     }
     for(int i = 0; i < b; i++){
         c += b;
     }
-    for(int j=0; j < n; j++){
-        a += c + d;
+    for(j=0; j < b; j++){
+        n += n;
     }
     for(int j=0; j < b; j++){
        d += b;

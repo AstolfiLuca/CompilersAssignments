@@ -1,13 +1,22 @@
-// Due loop non guarded -> cannot compute trip count
+// Due loop non guarded 
 int foo(int a, int b, int c, int z){
     int n=z;
     int i = 0;
     do {
-        i += 1;
+        i++;
+        a += i;
     } while (i < n);
+    i=0;
     do{
-        b += z; // i non viene aggiornata
-    } while(i < n);
+        i++;
+        b += 1; 
+        if (b>0){
+            b -=i;
+        } else{
+            b += i;
+        }
+        //i++;
+    } while(i < z);
 
     return a+b*c;
 }

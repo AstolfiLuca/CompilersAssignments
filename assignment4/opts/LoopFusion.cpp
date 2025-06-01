@@ -28,13 +28,12 @@ bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree 
 void printBlock(std::string s, BasicBlock *BB); // Stampa un blocco con il suo nome
 
 
-
 /**  ----- Punto 1 ----- 
 * ! "Lj and Lk must be adjacent"
 *
 * "There cannot be any statements that execute between the end of Lj and the beginning of Lk"
 * NB: Punto 0 -> se L1 è guarded, L2 è guarded e viceversa
-* NB: Di base: do_while sono non guarded, for sono guarded (inserire un do_while in un if per renderlo guarded)
+* NB: Di base: tutti i cicli sono senza guardia a meno che non la inseriamo noi manualmente o che vengano ruotati tramite il passo RotateLoop
 * Guarded: il successore non loop (exit) della guardia L1 deve essere l'entry block di L2, ovvero il blocco della sua guardia (L2)
 * Non Guarded: l'exit block di L1 deve essere il preheader di L2
 **/
@@ -46,6 +45,7 @@ bool areAdjacent(Loop &L1, Loop &L2){
   printBlock("L1 exit block", L1.getExitBlock());
   printBlock("L2 preheader block", L2.getLoopPreheader());
 
+  // Solo se ha la guardia
   if(blocksAdjacent){
     // Controllo che tra i due loop non ci siano istruzioni che dipendono da L1
     BasicBlock *firstL2 = L2.isGuarded() ? L2.getLoopGuardBranch()->getParent() : L2.getLoopPreheader();
@@ -69,18 +69,17 @@ bool areAdjacent(Loop &L1, Loop &L2){
                 }
               }
             } else {
+              // Se L1 contiene una definizione di un un operando nel preheaderL2, false
               outs() << "-> L'istruzione " << I << " dipende da " << *Def << "\n";
               return false;
             }
-
           }
         }
       }
     }
-    return true;
   }
 
-  return false;                     
+  return blocksAdjacent;                     
 }
 
 // Prende il successore non loop (exit) di una guardia 
@@ -147,7 +146,7 @@ bool areGuardsEqual(BranchInst *G1, BranchInst *G2) {
     auto *icmp1 = dyn_cast<ICmpInst>(G1->getCondition());
     auto *icmp2 = dyn_cast<ICmpInst>(G2->getCondition());
 
-    areEqual = (icmp1 && icmp2 && icmp1->isIdenticalTo(icmp2)); // icmp1->isIdenticalTo, co
+    areEqual = (icmp1 && icmp2 && icmp1->isIdenticalTo(icmp2)); 
   }
 
   if (areEqual) 
@@ -196,13 +195,13 @@ bool haveNotNegativeMemoryDependencies(Loop &L1, Loop &L2, ScalarEvolution &SE, 
         // NB: evitiamo di usare depends perchè la dipendenza è controllata manualmente
         // Calcoliamo la differenza tra i due valori SCEV degli ElementPtr
         const SCEV *storeSCEV = SE.getSCEVAtScope(storeGEP, &L1); // SCEV con il contesto del loop
-        const SCEV *loadSCEV = SE.getSCEVAtScope(storeOrLoadGEP, &L2);
-        const SCEV *Diff = SE.getMinusSCEV(loadSCEV, storeSCEV);
+        const SCEV *storeOrLoadSCEV = SE.getSCEVAtScope(storeOrLoadGEP, &L2);
+        const SCEV *Diff = SE.getMinusSCEV(storeOrLoadSCEV, storeSCEV);
 
         // 5 -> AddExpr
         // 8 -> AddRecExpr ("dipendente dall'indice del loop")
         outs() << "   Normalized SCEV (type: " << storeSCEV->getSCEVType() << ") Store: " << *storeSCEV << "\n"; 
-        outs() << "   Normalized SCEV (type: " << loadSCEV->getSCEVType() << ") Load: " << *loadSCEV << "\n";
+        outs() << "   Normalized SCEV (type: " << storeOrLoadSCEV->getSCEVType() << ") Load: " << *storeOrLoadSCEV << "\n";
         outs() << "   Difference SCEV (type: " << Diff->getSCEVType() << ") Diff: " << *Diff << "\n"; 
 
         // Preleviamo il primissimo operando, differenza i due offset 
@@ -260,16 +259,7 @@ bool haveNotNegativeScalarDependencies(Loop &L1, Loop &L2) {
   return true;
 }
 
-void printBlock(std::string s, BasicBlock *BB) {
-  outs() << s << ": ";
-  BB->printAsOperand(outs(), false);
-  outs() << "\n";
-}
-
-void merge_guarded(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI, Function &F){
-  return;
-}
-
+// Fonde i due loop L1 e L2
 void merge(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree &PDT, ScalarEvolution &SE, DependenceInfo &DI, Function &F){
   // Blocchi L1
   BasicBlock *guardL1 = L1->isGuarded() ? L1->getLoopGuardBranch()->getParent() : nullptr;
@@ -511,4 +501,10 @@ bool isLoopFusionValid(Loop *L1, Loop *L2, DominatorTree &DT, PostDominatorTree 
   else return false;
 
   return true;
+}
+
+void printBlock(std::string s, BasicBlock *BB) {
+  outs() << s << ": ";
+  BB->printAsOperand(outs(), false);
+  outs() << "\n";
 }

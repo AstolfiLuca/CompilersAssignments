@@ -7,31 +7,31 @@ target triple = "x86_64-pc-linux-gnu"
 define dso_local noundef i32 @_Z3fooiiii(i32 noundef %0, i32 noundef %1, i32 noundef %2, i32 noundef %3) #0 {
   br label %5
 
-5:                                                ; preds = %7, %4
-  %.0 = phi i32 [ 0, %4 ], [ %6, %7 ]
-  %6 = add nsw i32 %.0, 1
-  br label %7
-
-7:                                                ; preds = %5
-  %8 = icmp slt i32 %6, %3
-  br i1 %8, label %5, label %9, !llvm.loop !6
-
-9:                                                ; preds = %7
-  br label %10
-
-10:                                               ; preds = %12, %9
-  %.01 = phi i32 [ %1, %9 ], [ %11, %12 ]
-  %11 = add nsw i32 %.01, %3
+5:                                                ; preds = %10, %4
+  %.02 = phi i32 [ 0, %4 ], [ %6, %10 ]
+  %.0 = phi i32 [ %0, %4 ], [ %7, %10 ]
+  %.01 = phi i32 [ %1, %4 ], [ %13, %10 ]
+  %6 = add nsw i32 %.02, 1
+  %7 = add nsw i32 %.0, %6
+  %8 = add nsw i32 %.02, 1
+  %9 = add nsw i32 %.01, 1
   br label %12
 
-12:                                               ; preds = %10
-  %13 = icmp slt i32 %6, %3
-  br i1 %13, label %10, label %14, !llvm.loop !8
+10:                                               ; preds = %14
+  %11 = icmp slt i32 %6, %3
+  br i1 %11, label %5, label %15, !llvm.loop !6
+
+12:                                               ; preds = %5
+  %13 = sub nsw i32 %9, %8
+  br label %14
 
 14:                                               ; preds = %12
-  %15 = mul nsw i32 %11, %2
-  %16 = add nsw i32 %0, %15
-  ret i32 %16
+  br label %10
+
+15:                                               ; preds = %10
+  %16 = mul nsw i32 %13, %2
+  %17 = add nsw i32 %7, %16
+  ret i32 %17
 }
 
 ; Function Attrs: mustprogress noinline norecurse nounwind uwtable
@@ -54,4 +54,3 @@ attributes #1 = { mustprogress noinline norecurse nounwind uwtable "frame-pointe
 !5 = !{!"Ubuntu clang version 18.1.3 (1ubuntu1)"}
 !6 = distinct !{!6, !7}
 !7 = !{!"llvm.loop.mustprogress"}
-!8 = distinct !{!8, !7}
